@@ -40,6 +40,32 @@ export async function createRoom(req, res, next) {
 }
 
 /**
+ * GET /api/rooms/:roomId
+ * Live roster: the room with its teams, each team's members (username), and
+ * progression fields. Used by the dashboard's Game Roster panel.
+ */
+export async function getRoom(req, res, next) {
+  try {
+    const { roomId } = req.params;
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: {
+        teams: {
+          include: {
+            track: { select: { id: true, name: true } },
+            members: { include: { user: { select: { id: true, username: true } } } },
+          },
+        },
+      },
+    });
+    if (!room) return res.status(404).json({ error: "Room not found" });
+    res.status(200).json(room);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * POST /api/rooms/:roomId/join-player
  * Body: { username }
  * Upserts the user and assigns them (round-robin) to the team in this room
