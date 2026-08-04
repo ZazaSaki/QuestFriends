@@ -6,6 +6,15 @@ import { runAll } from "./test-runner.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
+
+const MIME = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+  webp: "image/webp", svg: "image/svg+xml",
+  mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4",
+  mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime",
+};
+const contentType = (name) =>
+  MIME[(name.split(".").pop() || "").toLowerCase()] || "application/octet-stream";
 // URL the browser (running on the host) should use to reach the backend —
 // the host-mapped port, NOT the in-Docker-network address.
 const PUBLIC_BACKEND_URL =
@@ -25,6 +34,29 @@ async function main() {
     if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // Static test assets: /assets/<file> -> tester/assets/<file>. Used both as
+    // quest media URLs and as programmatic upload sources by the dashboard.
+    if (req.url.startsWith("/assets/")) {
+      const name = decodeURIComponent(req.url.slice("/assets/".length).split("?")[0]);
+      if (!name || name.includes("..") || name.includes("/")) {
+        res.writeHead(400);
+        res.end("bad asset path");
+        return;
+      }
+      try {
+        const data = await readFile(join(__dirname, "assets", name));
+        res.writeHead(200, {
+          "Content-Type": contentType(name),
+          "Cache-Control": "no-store",
+        });
+        res.end(data);
+      } catch {
+        res.writeHead(404);
+        res.end("asset not found: " + name + " (drop it in tester/assets/)");
+      }
       return;
     }
     if (req.url === "/" || req.url.startsWith("/index")) {

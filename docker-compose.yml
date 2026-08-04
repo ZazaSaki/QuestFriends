@@ -69,6 +69,9 @@ services:
       BACKEND_HTTP: http://10.5.0.10:3000
       # Host-mapped URL the browser-based dashboard should use for the backend.
       PUBLIC_BACKEND_URL: http://localhost:9101
+    volumes:
+      # Drop test media into ./tester/assets and it is served live (no rebuild).
+      - ./tester/assets:/app/assets
     depends_on:
       - app
     networks:

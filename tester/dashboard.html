@@ -15,10 +15,10 @@
       button:disabled { opacity: 0.4; cursor: not-allowed; }
       input, select { padding: 6px; margin: 2px; border: 1px solid #bbb; border-radius: 4px; font-size: 13px; }
       .bar { display: flex; align-items: center; gap: 10px; background: #1a1a2e; color: #fff; padding: 10px 16px; flex-wrap: wrap; }
-      .bar input { min-width: 240px; }
+      .bar input { min-width: 220px; }
       #conn { font-weight: bold; }
       .cols { display: flex; gap: 12px; padding: 12px; align-items: flex-start; }
-      .col { flex: 1; min-width: 300px; border-radius: 8px; padding: 12px; border-top: 5px solid; }
+      .col { flex: 1; min-width: 320px; border-radius: 8px; padding: 12px; border-top: 5px solid; }
       .manager { background: #e8f0fe; border-color: #1a73e8; }
       .player  { background: #e6f4ea; border-color: #1e8e3e; }
       .staff   { background: #fef7e0; border-color: #f9ab00; }
@@ -30,13 +30,19 @@
       .banner { padding: 8px; border-radius: 5px; font-weight: bold; text-align: center; }
       .LOCKED { background: #ddd; } .UNLOCKED, .ACTIVE { background: #a5d6a7; }
       .APPROVED { background: #66bb6a; color: #fff; } .REJECTED { background: #ef9a9a; }
+      .FINISHED { background: #7e57c2; color: #fff; }
       img, video, audio { max-width: 100%; margin-top: 6px; border-radius: 4px; display: block; }
       .approve { background: #2e7d32 !important; } .reject { background: #c62828 !important; }
       .sub { border: 1px solid #ccc; background:#fff; border-radius: 6px; padding: 8px; margin: 6px 0; }
       .resolved { opacity: 0.45; }
-      #log { margin: 0 12px 12px; background: #111; color: #6f6; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 6px; height: 160px; overflow: auto; white-space: pre-wrap; }
+      #log { margin: 0 12px 12px; background: #111; color: #6f6; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 6px; height: 150px; overflow: auto; white-space: pre-wrap; }
       small { color: #555; }
       .pill { display:inline-block; padding:1px 6px; border-radius:10px; background:#ddd; font-size:11px; }
+      .team { border:1px solid #cfd8dc; border-radius:6px; padding:6px; margin:4px 0; background:#fafafa; }
+      .team b { color:#1a73e8; }
+      table { border-collapse: collapse; width: 100%; font-size: 11px; }
+      td, th { border: 1px solid #ddd; padding: 3px 5px; text-align: left; }
+      th { background: #eef; }
     </style>
   </head>
   <body>
@@ -53,11 +59,17 @@
       <div class="col manager">
         <h2>① Manager</h2>
         <button id="initBtn">1. Init Database &amp; Users</button>
-        <button id="questBtn" disabled>2. Generate Test Quests</button>
+        <button id="questBtn" disabled>2. Generate Test Quests (5)</button>
         <button id="startBtn" disabled>3. Start Game</button>
         <h3>Created IDs</h3>
         <div id="ids" class="box mono">— nothing yet —</div>
-        <h3>Quest cheat-sheet (copy into Player)</h3>
+
+        <h2 style="margin-top:14px">Lobby &amp; Game State</h2>
+        <div id="joinArea" class="row"><small>init first</small></div>
+        <h3>Game Roster <small id="rosterMeta"></small></h3>
+        <div id="roster" class="box">— init first —</div>
+
+        <h3>Quest cheat-sheet (GPS by Track)</h3>
         <div id="cheat" class="box mono">— generate quests —</div>
       </div>
 
@@ -70,12 +82,25 @@
           <span id="playerInfo" class="pill">unbound</span>
         </div>
         <div id="state" class="banner LOCKED">QUEST: LOCKED</div>
-        <div id="media" class="box">no quest media</div>
+
+        <h3>Quest description</h3>
+        <div id="desc" class="box">no active quest</div>
+
+        <h3>Team submission (shared)</h3>
+        <div id="submitted" class="box"><small>nothing submitted</small></div>
+
+        <h3>Reward</h3>
+        <div id="reward" class="box"><small>—</small></div>
+
+        <div id="conclusionWrap" style="display:none">
+          <h3>🏁 Game Conclusion</h3>
+          <div id="conclusion" class="box"></div>
+        </div>
 
         <h3>Simulate GPS</h3>
         <div class="row">
-          <input id="lat" placeholder="lat" size="8" value="40.4168" />
-          <input id="lng" placeholder="lng" size="8" value="-3.7038" />
+          <input id="lat" placeholder="lat" size="8" value="40.4160" />
+          <input id="lng" placeholder="lng" size="8" value="-3.7030" />
           <button id="gpsBtn">Send GPS &amp; Try Unlock</button>
         </div>
 
@@ -85,9 +110,14 @@
           <button id="qrBtn">Unlock</button>
         </div>
 
-        <h3>Submit Media (file → MinIO)</h3>
+        <h3>Submit Media → MinIO</h3>
         <div class="row">
-          <input type="file" id="file" />
+          <button id="upImg">Upload test-image</button>
+          <button id="upAud">Upload test-audio</button>
+          <button id="upVid">Upload test-video</button>
+        </div>
+        <div class="row">
+          or pick a file: <input type="file" id="file" />
           <button id="uploadBtn">Upload &amp; Submit</button>
         </div>
         <div id="uploadState"><small>no upload yet</small></div>
@@ -125,21 +155,26 @@
       const G = {
         manager: null, game: null, room: null,
         tracks: [], quests: [], staff: null,
-        players: [],       // [{ id, username, teamId }]
-        teams: [],         // [{ id, name }]
+        players: [],       // [{ id, username, teamId|null, joined }]
+        teams: [],         // [{ id, name, trackId }]
         socket: null,
-        activeQuest: null, // last unlocked quest content for the active player
+        teamState: {},     // teamId -> { status, questContent, submissionMedia, reward, currentSeqNum, finished }
+        rosterTimer: null,
       };
 
       const $ = (id) => document.getElementById(id);
       const backend = () => $("backend").value.replace(/\/+$/, "");
+      const assetBase = () => window.location.origin + "/assets";
       const activePlayer = () => G.players[parseInt($("playerSel").value, 10)] || null;
+      const teamA = () => G.teams.find((t) => t.trackId === (G.tracks[0] || {}).id);
+      const teamB = () => G.teams.find((t) => t.trackId === (G.tracks[1] || {}).id);
 
       function log(msg, obj) {
         const line = "[" + new Date().toLocaleTimeString() + "] " + msg +
           (obj !== undefined ? " " + JSON.stringify(obj) : "");
         $("log").textContent = line + "\n" + $("log").textContent;
       }
+      function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
 
       async function api(method, path, body) {
         const res = await fetch(backend() + path, {
@@ -153,7 +188,17 @@
         return { status: res.status, ok: res.ok, body: data };
       }
 
-      // Render a media URL as the right tag, guessing by extension.
+      // A structured content/reward block: { text, image, audio, video }
+      function renderBlock(b) {
+        if (!b) return "<em>—</em>";
+        let h = "";
+        if (b.text) h += "<div>" + esc(b.text) + "</div>";
+        if (b.image) h += `<img src="${b.image}" alt="image" />`;
+        if (b.audio) h += `<audio src="${b.audio}" controls></audio>`;
+        if (b.video) h += `<video src="${b.video}" controls></video>`;
+        return h || "<em>(no renderable media)</em>";
+      }
+      // A single uploaded URL — guess the tag by extension.
       function renderMedia(url) {
         if (!url) return "<em>no media</em>";
         const clean = url.split("?")[0].toLowerCase();
@@ -163,7 +208,10 @@
         return `<a href="${url}" target="_blank">${url}</a>`;
       }
 
-      // ---------------- MANAGER ----------------
+      const getTS = (teamId) => (G.teamState[teamId] = G.teamState[teamId] ||
+        { status: "LOCKED", questContent: null, submissionMedia: null, reward: null, currentSeqNum: 1, finished: false });
+
+      // ==================== MANAGER ====================
       $("pingBtn").onclick = async () => {
         const r = await api("GET", "/health");
         $("conn").textContent = r.ok ? "● backend ok" : "● backend DOWN";
@@ -175,72 +223,90 @@
           G.manager = (await api("POST", "/api/users", { username: "gm-" + Date.now(), role: "MANAGER" })).body;
           G.game = (await api("POST", "/api/games", {
             title: "God Mode Game", creatorId: G.manager.id,
-            introduction: { text: "Welcome" }, conclusion: { text: "Done" },
+            introduction: { text: "Welcome, adventurers!" },
+            conclusion: { text: "🎉 You finished the hunt — well played!", image: assetBase() + "/test-image.png" },
           })).body;
-          // Two team routes → two teams in the room.
           G.tracks = [
             (await api("POST", "/api/tracks", { gameId: G.game.id, name: "Team A Route" })).body,
             (await api("POST", "/api/tracks", { gameId: G.game.id, name: "Team B Route" })).body,
           ];
           G.room = (await api("POST", "/api/rooms", { gameId: G.game.id, staffPassword: "staff123" })).body;
-          G.teams = G.room.teams; // one per track
+          G.teams = G.room.teams;
           G.staff = (await api("POST", "/api/users", { username: "staff-" + Date.now(), role: "STAFF" })).body;
-          // Two players → round-robin lands them on different teams.
+          // Create the two player USERS but DON'T join yet (join via Lobby buttons).
           G.players = [];
           for (let i = 1; i <= 2; i++) {
-            const r = (await api("POST", `/api/rooms/${G.room.id}/join-player`, { username: `p${i}-` + Date.now() })).body;
-            G.players.push({ id: r.user.id, username: r.user.username, teamId: r.team.id });
+            const u = (await api("POST", "/api/users", { username: `p${i}-` + Date.now(), role: "FOLLOWER" })).body;
+            G.players.push({ id: u.id, username: u.username, teamId: null, joined: false });
           }
           connectSocket();
-          renderIds();
-          $("questBtn").disabled = false;
+          renderIds(); renderJoinButtons(); startRosterPolling();
           bindPlayer(); bindStaff();
-          log("✔ init complete");
+          $("questBtn").disabled = false;
+          log("✔ init complete — now Join Room the players");
         } catch (e) { log("init error: " + e.message); $("initBtn").disabled = false; }
       };
 
       $("questBtn").onclick = async () => {
         try {
           $("questBtn").disabled = true;
-          const base = backend().replace(/:\d+$/, ":9110"); // dummy MinIO host for quest media
+          const IMG = assetBase() + "/test-image.png";
+          const AUD = assetBase() + "/test-audio.mp3";
+          const VID = assetBase() + "/test-video.mp4";
+          // 5 quests: exact content(description) -> postChallengeContent(reward) combos.
           const defs = [
-            { title: "QR Photo Stop", openChallengeType: "QR", openChallengeValue: "QR-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
-              challengeType: "PHOTO", content: { description: "Find the statue & photograph it", mediaType: "image", mediaUrl: base + "/scavenger/dummy-image.png" },
-              lat: 40.4168, lng: -3.7038 },
-            { title: "Open Audio Stop", openChallengeType: "NONE", openChallengeValue: null,
-              challengeType: "PHOTO", content: { description: "Listen, then snap the plaque", mediaType: "audio", mediaUrl: base + "/scavenger/dummy-audio.mp3" },
-              lat: 40.4180, lng: -3.7050 },
-            { title: "Open Video Stop", openChallengeType: "NONE", openChallengeValue: null,
-              challengeType: "VIDEO", content: { description: "Watch, then record your answer", mediaType: "video", mediaUrl: base + "/scavenger/dummy-video.mp4" },
-              lat: 40.4190, lng: -3.7060 },
+            { title: "Q1 · QR Photo", entry: "QR", type: "PHOTO",
+              content: { text: "Find the fountain and photograph it.", image: IMG },
+              reward:  { text: "The fountain dates to 1901.", image: IMG } },
+            { title: "Q2 · Open Audio", entry: "NONE", type: "PHOTO",
+              content: { text: "Listen to the clue, then snap the plaque.", audio: AUD },
+              reward:  { text: "Correct! Enjoy this clip.", video: VID } },
+            { title: "Q3 · Open Video", entry: "NONE", type: "VIDEO",
+              content: { text: "Watch, then record your answer.", video: VID },
+              reward:  { text: "Nicely done — a tune for you.", audio: AUD } },
+            { title: "Q4 · Open QUIZ (auto)", entry: "NONE", type: "QUIZ",
+              content: { image: IMG, audio: AUD, answer: "42" },
+              reward:  { text: "42 is correct — the answer to everything." } },
+            { title: "Q5 · Open Text", entry: "NONE", type: "PHOTO",
+              content: { text: "Text-only prompt: describe the mural." },
+              reward:  { image: IMG, video: VID } },
           ];
           G.quests = [];
+          defs.forEach((d, i) => {
+            const seq = i + 1;
+            // Track separation: Team A and Team B get DIFFERENT coords per quest.
+            d.seq = seq;
+            d.coordsA = { lat: +(40.4160 + i * 0.0020).toFixed(4), lng: +(-3.7030 - i * 0.0020).toFixed(4) };
+            d.coordsB = { lat: +(d.coordsA.lat + 0.0500).toFixed(4), lng: +(d.coordsA.lng + 0.0500).toFixed(4) };
+          });
           for (const d of defs) {
             const q = (await api("POST", "/api/quests", {
               gameId: G.game.id, title: d.title, score: 10,
-              openChallengeType: d.openChallengeType, openChallengeValue: d.openChallengeValue,
-              challengeType: d.challengeType, content: d.content,
-              postChallengeContent: { reward: "Nice work on " + d.title },
+              openChallengeType: d.entry,
+              openChallengeValue: d.entry === "QR" ? "QR-" + Math.random().toString(36).slice(2, 8).toUpperCase() : null,
+              challengeType: d.type, content: d.content, postChallengeContent: d.reward,
             })).body;
-            G.quests.push({ ...q, ...d });
+            G.quests.push({ ...d, id: q.id, challengeValue: q.openChallengeValue });
           }
-          // Attach the 3 quests as waypoints (seq 1..3) to BOTH team routes.
-          for (const track of G.tracks) {
-            await api("POST", `/api/tracks/${track.id}/waypoints`, {
-              waypoints: G.quests.map((q, i) => ({
-                questId: q.id, sequenceOrder: i + 1, latitude: q.lat, longitude: q.lng, radius: 20,
+          // Attach as waypoints to each track, using that track's own coordinates.
+          const trackCoords = [(q) => q.coordsA, (q) => q.coordsB];
+          for (let ti = 0; ti < G.tracks.length; ti++) {
+            await api("POST", `/api/tracks/${G.tracks[ti].id}/waypoints`, {
+              waypoints: G.quests.map((q) => ({
+                questId: q.id, sequenceOrder: q.seq,
+                latitude: trackCoords[ti](q).lat, longitude: trackCoords[ti](q).lng, radius: 25,
               })),
             });
           }
           renderCheat();
           $("startBtn").disabled = false;
-          log("✔ quests + waypoints created");
+          log("✔ 5 quests + per-track waypoints created");
         } catch (e) { log("quest error: " + e.message); $("questBtn").disabled = false; }
       };
 
       $("startBtn").onclick = async () => {
         const r = await api("POST", `/api/rooms/${G.room.id}/start`);
-        log("game started", r.body && r.body.status);
+        log("📢 game started", r.body && r.body.status);
       };
 
       function renderIds() {
@@ -249,20 +315,59 @@
           "game    : " + G.game.id + "\n" +
           "room    : " + G.room.id + " (staffPw: staff123)\n" +
           "staff   : " + G.staff.id + "\n" +
-          G.teams.map((t, i) => "team " + (i ? "B" : "A") + "  : " + t.id).join("\n") + "\n" +
-          G.players.map((p, i) => "player" + (i + 1) + " : " + p.id + " → team " + p.teamId).join("\n");
+          G.teams.map((t) => "team " + t.name + " : " + t.id).join("\n");
+      }
+
+      function renderJoinButtons() {
+        $("joinArea").innerHTML = "";
+        G.players.forEach((p, i) => {
+          const b = document.createElement("button");
+          b.textContent = "Join Room: " + p.username;
+          b.onclick = async () => {
+            const r = await api("POST", `/api/rooms/${G.room.id}/join-player`, { username: p.username });
+            if (r.ok) { p.teamId = r.body.team.id; p.joined = true; b.disabled = true; log("🚪 joined", { player: p.username, team: p.teamId }); refreshRoster(); }
+          };
+          $("joinArea").appendChild(b);
+        });
       }
 
       function renderCheat() {
-        $("cheat").textContent = G.quests.map((q, i) =>
-          "seq " + (i + 1) + " · " + q.title + "\n" +
-          "   entry : " + (q.openChallengeType === "NONE" ? "OPEN (just GPS)" : q.openChallengeType + " → " + q.openChallengeValue) + "\n" +
-          "   type  : " + q.challengeType + "\n" +
-          "   GPS   : " + q.lat + ", " + q.lng + "  (radius 20m)"
-        ).join("\n\n");
+        let h = "<table><tr><th>Seq</th><th>Quest</th><th>Entry</th><th>Team A (Track 1) GPS</th><th>Team B (Track 2) GPS</th></tr>";
+        for (const q of G.quests) {
+          h += "<tr><td>" + q.seq + "</td><td>" + esc(q.title) + "</td><td>" +
+            (q.entry === "NONE" ? "OPEN" : q.entry + ":" + q.challengeValue) + "</td>" +
+            "<td>" + q.coordsA.lat + ", " + q.coordsA.lng + "</td>" +
+            "<td>" + q.coordsB.lat + ", " + q.coordsB.lng + "</td></tr>";
+        }
+        h += "</table><small>↑ same quest, different coordinates per track = teams routed apart.</small>";
+        $("cheat").innerHTML = h;
       }
 
-      // ---------------- SOCKET ----------------
+      // ==================== ROSTER (polled) ====================
+      function startRosterPolling() {
+        if (G.rosterTimer) clearInterval(G.rosterTimer);
+        refreshRoster();
+        G.rosterTimer = setInterval(refreshRoster, 2500);
+      }
+      async function refreshRoster() {
+        if (!G.room) return;
+        const r = await api("GET", `/api/rooms/${G.room.id}`);
+        if (!r.ok) return;
+        $("rosterMeta").textContent = "· Tracks: " + G.tracks.length + " · Teams: " + r.body.teams.length;
+        let h = "";
+        for (const t of r.body.teams) {
+          const members = t.members.map((m) => m.user.username);
+          h += "<div class='team'><b>" + esc(t.name) + "</b> " +
+            "<span class='pill'>seq " + t.currentSeqNum + "</span> " +
+            "<span class='pill'>score " + t.totalScore + "</span>" +
+            "<div>players: " + (members.length ? members.map(esc).join(", ") : "<em>none</em>") + "</div></div>";
+        }
+        const notJoined = G.players.filter((p) => !p.joined).map((p) => p.username);
+        if (notJoined.length) h += "<div><small>not yet joined: " + notJoined.map(esc).join(", ") + "</small></div>";
+        $("roster").innerHTML = h;
+      }
+
+      // ==================== SOCKET ====================
       function connectSocket() {
         const existing = document.getElementById("sioScript");
         if (existing) existing.remove();
@@ -274,111 +379,151 @@
           G.socket = io(backend(), { transports: ["websocket"], forceNew: true });
           G.socket.on("connect", () => {
             $("conn").textContent = "● connected " + G.socket.id;
-            // Join room + staff + BOTH team channels so this one page sees all.
+            // Join room + staff + BOTH team channels so this one page sees all teams.
             G.socket.emit("join_room", { roomId: G.room.id, teamId: G.teams[0].id, isStaff: true });
             G.socket.emit("join_room", { roomId: G.room.id, teamId: G.teams[1].id });
-            log("joined room/teams/staff");
+            log("joined room / both teams / staff");
           });
           G.socket.on("disconnect", () => { $("conn").textContent = "● disconnected"; });
           G.socket.on("game_started", (p) => log("📢 game_started", p));
+
           G.socket.on("quest_unlocked", (p) => {
+            const ts = getTS(p.teamId);
+            ts.status = "UNLOCKED"; ts.questContent = p.content; ts.reward = null;
+            ts.submissionMedia = null; ts.finished = false;
             log("🔓 quest_unlocked", { team: p.teamId, quest: p.title });
-            if (activePlayer() && p.teamId === activePlayer().teamId) showQuest(p.content, "ACTIVE");
+            renderIfActive(p.teamId);
           });
-          G.socket.on("at_location", (p) => {
-            log("📍 at_location (inside radius)", { team: p.teamId, seq: p.sequenceOrder });
+          G.socket.on("at_location", (p) => log("📍 at_location (inside radius)", { team: p.teamId, seq: p.sequenceOrder }));
+          G.socket.on("submission_pending", (p) => {
+            const ts = getTS(p.teamId); ts.submissionMedia = p.content; // shared across the team
+            addSubmission(p); renderIfActive(p.teamId);
+            log("🖼 submission_pending", { team: p.teamName });
           });
-          G.socket.on("validation_result", (p) => {
+          G.socket.on("validation_result", async (p) => {
+            const ts = getTS(p.teamId);
             log("✅ validation_result", { team: p.teamId, status: p.status });
-            if (activePlayer() && p.teamId === activePlayer().teamId) {
-              setState(p.status, p.status === "APPROVED"
-                ? "APPROVED +" + (p.awardedScore ?? "")
-                : "REJECTED — retry");
+            if (p.status === "APPROVED") {
+              ts.status = "APPROVED"; ts.reward = p.postChallengeContent || { text: "Approved!" };
+              ts.currentSeqNum = p.currentSeqNum; ts.submissionMedia = null;
+              renderIfActive(p.teamId);
+              await advanceTeam(p.teamId); // game loop → LOCKED for next quest, or conclusion
+            } else {
+              ts.status = "REJECTED"; renderIfActive(p.teamId);
             }
           });
-          G.socket.on("submission_pending", (p) => { addSubmission(p); log("🖼 submission_pending", { team: p.teamName }); });
         };
         document.body.appendChild(s);
       }
 
-      // ---------------- PLAYER ----------------
+      // After an approval: reset to LOCKED for the next quest, or show conclusion.
+      async function advanceTeam(teamId) {
+        const nc = await api("GET", `/api/play/next-coordinate?teamId=${teamId}`);
+        const ts = getTS(teamId);
+        if (nc.body && nc.body.finished) {
+          ts.finished = true; ts.status = "FINISHED"; ts.questContent = null;
+        } else {
+          ts.status = "LOCKED"; ts.questContent = null;
+        }
+        renderIfActive(teamId);
+      }
+
+      // ==================== PLAYER ====================
       function bindPlayer() {
         const p = activePlayer();
-        $("playerInfo").textContent = p ? p.username + " · team " + p.teamId.slice(0, 8) : "unbound";
+        $("playerInfo").textContent = p ? p.username + (p.teamId ? " · team " + p.teamId.slice(0, 8) : " · not joined") : "unbound";
       }
-      $("playerSel").onchange = () => { bindPlayer(); setState("LOCKED", "LOCKED"); $("media").innerHTML = "no quest media"; };
+      $("playerSel").onchange = async () => { bindPlayer(); const p = activePlayer(); if (p && p.teamId) await refreshTeamView(p); else renderPlayer(); };
 
-      function setState(cls, text) {
-        const el = $("state");
-        el.className = "banner " + cls;
-        el.textContent = "QUEST: " + text;
+      const renderIfActive = (teamId) => { const p = activePlayer(); if (p && p.teamId === teamId) renderPlayer(); };
+
+      // Pull authoritative team state from the server (used on player switch/join),
+      // so a teammate sees an already-unlocked quest + submitted media without redoing it.
+      async function refreshTeamView(player) {
+        const ts = getTS(player.teamId);
+        const cs = await api("GET", `/api/play/current-state?userId=${player.id}`);
+        const nc = await api("GET", `/api/play/next-coordinate?teamId=${player.teamId}`);
+        if (cs.ok) {
+          ts.currentSeqNum = cs.body.currentSeqNum;
+          const pend = (cs.body.pendingSubmissions || [])[0];
+          if (pend) ts.submissionMedia = pend.content;
+          if (nc.body && nc.body.finished) { ts.finished = true; ts.status = "FINISHED"; }
+          else if (cs.body.activeQuestId) {
+            const u = await api("POST", "/api/play/unlock-quest", { teamId: player.teamId }); // idempotent alreadyActive
+            if (u.ok && u.body.content) { ts.status = "UNLOCKED"; ts.questContent = u.body.content; }
+          } else if (ts.status !== "APPROVED") { ts.status = "LOCKED"; ts.questContent = null; }
+        }
+        renderPlayer();
       }
-      function showQuest(content, cls) {
-        G.activeQuest = content;
-        setState(cls, cls);
-        const url = content && content.mediaUrl;
-        $("media").innerHTML =
-          "<b>" + (content && content.description || "") + "</b>" +
-          (url ? "<div><small>media (" + (content.mediaType || "") + "): " + url + "</small>" + renderMedia(url) + "</div>" : "");
+
+      function setBanner(cls, text) { $("state").className = "banner " + cls; $("state").textContent = "QUEST: " + text; }
+
+      function renderPlayer() {
+        const p = activePlayer();
+        if (!p || !p.teamId) { setBanner("LOCKED", "not joined"); $("desc").textContent = "join room first"; return; }
+        const ts = getTS(p.teamId);
+        setBanner(ts.status, ts.status + (ts.status === "LOCKED" ? " — send GPS for next quest" : ""));
+        $("desc").innerHTML = ts.questContent ? renderBlock(ts.questContent) : "<small>no active quest</small>";
+        $("submitted").innerHTML = ts.submissionMedia ? renderMedia(ts.submissionMedia) : "<small>nothing submitted</small>";
+        $("reward").innerHTML = ts.reward ? renderBlock(ts.reward) : "<small>—</small>";
+        const showConc = ts.finished;
+        $("conclusionWrap").style.display = showConc ? "block" : "none";
+        if (showConc) $("conclusion").innerHTML = renderBlock(G.game.conclusion);
       }
 
       $("gpsBtn").onclick = async () => {
-        const p = activePlayer(); if (!p) return log("no player bound");
-        G.socket.emit("player_location_update", {
-          userId: p.id, teamId: p.teamId, lat: parseFloat($("lat").value), lng: parseFloat($("lng").value),
-        });
+        const p = activePlayer(); if (!p || !p.teamId) return log("join a player first");
+        G.socket.emit("player_location_update", { userId: p.id, teamId: p.teamId, lat: parseFloat($("lat").value), lng: parseFloat($("lng").value) });
         log("→ GPS sent");
         const r = await api("POST", "/api/play/unlock-quest", { teamId: p.teamId }); // Open quests unlock; QR → 403
-        if (r.ok && !r.body.finished) showQuest(r.body.content, "UNLOCKED");
+        if (r.ok && !r.body.finished) { const ts = getTS(p.teamId); ts.status = "UNLOCKED"; ts.questContent = r.body.content; renderIfActive(p.teamId); }
       };
-
       $("qrBtn").onclick = async () => {
-        const p = activePlayer(); if (!p) return;
+        const p = activePlayer(); if (!p || !p.teamId) return;
         const r = await api("POST", "/api/play/unlock-quest", { teamId: p.teamId, challengeValue: $("qr").value });
-        log("unlock ← " + r.status, r.body);
-        if (r.ok && !r.body.finished) showQuest(r.body.content, "UNLOCKED");
+        log("unlock ← " + r.status, r.body && r.body.alreadyActive ? { alreadyActive: true } : undefined);
+        if (r.ok && !r.body.finished) { const ts = getTS(p.teamId); ts.status = "UNLOCKED"; ts.questContent = r.body.content; renderIfActive(p.teamId); }
       };
 
-      $("uploadBtn").onclick = async () => {
-        const p = activePlayer(); if (!p) return;
-        const file = $("file").files[0];
-        if (!file) return log("pick a file first");
+      async function doUpload(blob, ext) {
+        const p = activePlayer(); if (!p || !p.teamId) return log("join a player first");
         try {
           $("uploadState").textContent = "requesting presigned URL…";
-          const ext = (file.name.split(".").pop() || "bin");
           const pre = (await api("GET", `/api/play/upload-url?teamId=${p.teamId}&ext=${ext}`)).body;
-          // 1) PUT the raw file straight to MinIO.
           $("uploadState").textContent = "uploading to MinIO…";
-          const put = await fetch(pre.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
-          if (!put.ok) throw new Error("MinIO PUT failed: " + put.status);
-          // 2) Submit the presigned GET URL as the confirmation.
+          const put = await fetch(pre.uploadUrl, { method: "PUT", body: blob, headers: { "Content-Type": blob.type || "application/octet-stream" } });
+          if (!put.ok) throw new Error("MinIO PUT " + put.status);
           const sub = await api("POST", "/api/play/submit", { teamId: p.teamId, content: pre.getUrl });
           $("uploadState").innerHTML = "uploaded ✓ submitted (" + sub.status + ")" + renderMedia(pre.getUrl);
-          log("📤 media uploaded + submitted", { obj: pre.objectName });
-        } catch (e) {
-          $("uploadState").textContent = "upload error: " + e.message;
-          log("upload error: " + e.message);
-        }
-      };
+          log("📤 uploaded + submitted", { obj: pre.objectName });
+        } catch (e) { $("uploadState").textContent = "upload error: " + e.message; log("upload error: " + e.message); }
+      }
+      $("uploadBtn").onclick = () => { const f = $("file").files[0]; if (!f) return log("pick a file first"); doUpload(f, (f.name.split(".").pop() || "bin")); };
+      async function uploadAsset(name, ext) {
+        try { const r = await fetch(assetBase() + "/" + name); if (!r.ok) throw new Error("asset " + name + " not found (drop it in tester/assets/)"); doUpload(await r.blob(), ext); }
+        catch (e) { $("uploadState").textContent = e.message; log(e.message); }
+      }
+      $("upImg").onclick = () => uploadAsset("test-image.png", "png");
+      $("upAud").onclick = () => uploadAsset("test-audio.mp3", "mp3");
+      $("upVid").onclick = () => uploadAsset("test-video.mp4", "mp4");
 
       $("quizBtn").onclick = async () => {
-        const p = activePlayer(); if (!p) return;
+        const p = activePlayer(); if (!p || !p.teamId) return;
         const r = await api("POST", "/api/play/submit", { teamId: p.teamId, content: $("quiz").value });
-        log("quiz ← " + r.status, r.body);
-        if (r.body && r.body.result) setState(r.body.result === "CORRECT" ? "APPROVED" : "REJECTED", r.body.result);
+        log("quiz ← " + r.status, r.body && r.body.result);
+        // Correct answer → the auto validation_result event renders the reward instantly (bypass staff).
       };
 
-      // ---------------- STAFF ----------------
-      function bindStaff() {
-        $("staffInfo").textContent = G.staff ? "staff " + G.staff.username : "unbound";
-      }
+      // ==================== STAFF ====================
+      function bindStaff() { $("staffInfo").textContent = G.staff ? "staff " + G.staff.username : "unbound"; }
       $("swapBtn").onclick = async () => {
         const p = G.players[parseInt($("swapPlayer").value, 10)];
-        const targetTeam = G.teams[parseInt($("swapTeam").value, 10)];
-        if (!p || !targetTeam) return;
-        if (p.teamId === targetTeam.id) return log("player already on that team");
-        const r = await api("PUT", "/api/teams/swap-member", { userId: p.id, fromTeamId: p.teamId, toTeamId: targetTeam.id });
-        if (r.ok) { p.teamId = targetTeam.id; renderIds(); bindPlayer(); log("🔀 swapped", { player: p.username, team: targetTeam.id }); }
+        const idx = parseInt($("swapTeam").value, 10);
+        const target = idx === 0 ? teamA() : teamB();
+        if (!p || !p.teamId || !target) return log("player must be joined first");
+        if (p.teamId === target.id) return log("already on that team");
+        const r = await api("PUT", "/api/teams/swap-member", { userId: p.id, fromTeamId: p.teamId, toTeamId: target.id });
+        if (r.ok) { p.teamId = target.id; bindPlayer(); refreshRoster(); log("🔀 swapped", { player: p.username, team: target.id }); }
       };
 
       function addSubmission(p) {
@@ -387,34 +532,24 @@
         if (document.getElementById("sub-" + id)) return;
         const div = document.createElement("div");
         div.className = "sub"; div.id = "sub-" + id;
-        div.innerHTML =
-          "<div><b>" + (p.teamName || p.teamId) + "</b> — " + (p.questTitle || p.questId) +
-          " <span class='pill'>" + (p.challengeType || "") + "</span></div>" +
-          renderMedia(p.content);
-        const approve = document.createElement("button");
-        approve.textContent = "✔ Approve"; approve.className = "approve";
+        div.innerHTML = "<div><b>" + esc(p.teamName || p.teamId) + "</b> — " + esc(p.questTitle || p.questId) +
+          " <span class='pill'>" + (p.challengeType || "") + "</span></div>" + renderMedia(p.content);
+        const approve = document.createElement("button"); approve.textContent = "✔ Approve"; approve.className = "approve";
         approve.onclick = () => decide(id, "APPROVED", div);
-        const reject = document.createElement("button");
-        reject.textContent = "✘ Reject"; reject.className = "reject";
+        const reject = document.createElement("button"); reject.textContent = "✘ Reject"; reject.className = "reject";
         reject.onclick = () => decide(id, "REJECTED", div);
         div.appendChild(approve); div.appendChild(reject);
         $("feed").prepend(div);
       }
-
       async function decide(id, status, div) {
         const r = await api("POST", `/api/staff/submissions/${id}/validate`, { status, validatorId: G.staff.id });
-        log("validate " + status + " ← " + r.status, r.body);
+        log("validate " + status + " ← " + r.status);
         if (r.ok) div.classList.add("resolved");
       }
-
       $("refreshBtn").onclick = async () => {
         const r = await api("GET", `/api/staff/submissions?roomId=${G.room.id}`);
         if (Array.isArray(r.body)) {
-          r.body.forEach((s) => addSubmission({
-            submissionId: s.id, teamId: s.teamId, teamName: s.team && s.team.name,
-            questId: s.questId, questTitle: s.quest && s.quest.title,
-            challengeType: s.quest && s.quest.challengeType, content: s.content,
-          }));
+          r.body.forEach((s) => addSubmission({ submissionId: s.id, teamId: s.teamId, teamName: s.team && s.team.name, questId: s.questId, questTitle: s.quest && s.quest.title, challengeType: s.quest && s.quest.challengeType, content: s.content }));
           log("refreshed: " + r.body.length + " pending");
         }
       };
