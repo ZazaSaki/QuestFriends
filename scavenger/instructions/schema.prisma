@@ -1,0 +1,293 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MANAGER
+  STAFF
+  FOLLOWER
+}
+
+enum ChallengeType {
+  QUIZ
+  PHOTO
+  VIDEO
+}
+
+enum OpenChallengeType {
+  NONE
+  PASSWORD
+  QR
+}
+
+enum RoomStatus {
+  OPEN
+  PLAYING
+  FINISHED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          String       @id @default(uuid())
+  username    String       @unique
+  role        Role         @default(FOLLOWER)
+  createdAt   DateTime     @default(now())
+  games       Game[]       @relation("CreatedGames")
+  players     RoomPlayer[]
+  validations Submission[] @relation("ValidatedBy")
+}
+
+model Game {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  introduction Json?    // Game Intro block (text, media)
+  conclusion   Json?    // Game Outro block (text, media)
+  creatorId    String
+  creator      User     @relation("CreatedGames", fields: [creatorId], references: [id])
+  createdAt    DateTime @default(now())
+  quests       Quest[]
+  tracks       Track[]
+  rooms        Room[]
+}
+
+model Quest {
+  id                   String            @id @default(uuid())
+  gameId               String
+  game                 Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  title                String
+  score                Int               @default(10) // Points awarded for completion
+  openChallengeType    OpenChallengeType @default(NONE)
+  openChallengeValue   String?           // The QR string or Password to unlock
+  content              Json              // The Description block
+  challengeType        ChallengeType     @default(QUIZ)
+  postChallengeContent Json?             // The Reward block
+  waypoints            TrackWaypoint[]
+  submissions          Submission[]
+}
+
+model Track {
+  id        String          @id @default(uuid())
+  gameId    String
+  game      Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name      String
+  waypoints TrackWaypoint[]
+  teams     Team[]
+}
+
+model TrackWaypoint {
+  id            String @id @default(uuid())
+  trackId       String
+  track         Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  questId       String
+  quest         Quest  @relation(fields: [questId], references: [id], onDelete: Cascade)
+  sequenceOrder Int
+  latitude      Float
+  longitude     Float
+  radius        Int    @default(15) // Activation radius in meters
+
+  @@unique([trackId, sequenceOrder])
+}
+
+model Room {
+  id            String     @id @default(uuid())
+  gameId        String
+  game          Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  status        RoomStatus @default(OPEN)
+  staffPassword String?    // Optional password for staff to join
+  createdAt     DateTime   @default(now())
+  teams         Team[]
+}
+
+model Team {
+  id             String       @id @default(uuid())
+  roomId         String
+  room           Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  trackId        String
+  track          Track        @relation(fields: [trackId], references: [id])
+  name           String
+  totalScore     Int          @default(0)
+  currentSeqNum  Int          @default(1) // Tracks the team's current progression pace
+  members        RoomPlayer[]
+  submissions    Submission[]
+}
+
+model RoomPlayer {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, teamId])
+}
+
+model Submission {
+  id          String           @id @default(uuid())
+  teamId      String
+  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  questId     String
+  quest       Quest            @relation(fields: [questId], references: [id], onDelete: Cascade)
+  content     String?          // URL for photo/video, or text string for Quiz answers
+  status      SubmissionStatus @default(PENDING)
+  validatorId String?
+  validator   User?            @relation("ValidatedBy", fields: [validatorId], references: [id])
+  createdAt   DateTime         @default(now())
+}datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MANAGER
+  STAFF
+  FOLLOWER
+}
+
+enum ChallengeType {
+  QUIZ
+  PHOTO
+  VIDEO
+}
+
+enum OpenChallengeType {
+  NONE
+  PASSWORD
+  QR
+}
+
+enum RoomStatus {
+  OPEN
+  PLAYING
+  FINISHED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          String       @id @default(uuid())
+  username    String       @unique
+  role        Role         @default(FOLLOWER)
+  createdAt   DateTime     @default(now())
+  games       Game[]       @relation("CreatedGames")
+  players     RoomPlayer[]
+  validations Submission[] @relation("ValidatedBy")
+}
+
+model Game {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  introduction Json?    // Game Intro block (text, media)
+  conclusion   Json?    // Game Outro block (text, media)
+  creatorId    String
+  creator      User     @relation("CreatedGames", fields: [creatorId], references: [id])
+  createdAt    DateTime @default(now())
+  quests       Quest[]
+  tracks       Track[]
+  rooms        Room[]
+}
+
+model Quest {
+  id                   String            @id @default(uuid())
+  gameId               String
+  game                 Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  title                String
+  score                Int               @default(10) // Points awarded for completion
+  openChallengeType    OpenChallengeType @default(NONE)
+  openChallengeValue   String?           // The QR string or Password to unlock
+  content              Json              // The Description block
+  challengeType        ChallengeType     @default(QUIZ)
+  postChallengeContent Json?             // The Reward block
+  waypoints            TrackWaypoint[]
+  submissions          Submission[]
+}
+
+model Track {
+  id        String          @id @default(uuid())
+  gameId    String
+  game      Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name      String
+  waypoints TrackWaypoint[]
+  teams     Team[]
+}
+
+model TrackWaypoint {
+  id            String @id @default(uuid())
+  trackId       String
+  track         Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  questId       String
+  quest         Quest  @relation(fields: [questId], references: [id], onDelete: Cascade)
+  sequenceOrder Int
+  latitude      Float
+  longitude     Float
+  radius        Int    @default(15) // Activation radius in meters
+
+  @@unique([trackId, sequenceOrder])
+}
+
+model Room {
+  id            String     @id @default(uuid())
+  gameId        String
+  game          Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  status        RoomStatus @default(OPEN)
+  staffPassword String?    // Optional password for staff to join
+  createdAt     DateTime   @default(now())
+  teams         Team[]
+}
+
+model Team {
+  id             String       @id @default(uuid())
+  roomId         String
+  room           Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  trackId        String
+  track          Track        @relation(fields: [trackId], references: [id])
+  name           String
+  totalScore     Int          @default(0)
+  currentSeqNum  Int          @default(1) // Tracks the team's current progression pace
+  members        RoomPlayer[]
+  submissions    Submission[]
+}
+
+model RoomPlayer {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, teamId])
+}
+
+model Submission {
+  id          String           @id @default(uuid())
+  teamId      String
+  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  questId     String
+  quest       Quest            @relation(fields: [questId], references: [id], onDelete: Cascade)
+  content     String?          // URL for photo/video, or text string for Quiz answers
+  status      SubmissionStatus @default(PENDING)
+  validatorId String?
+  validator   User?            @relation("ValidatedBy", fields: [validatorId], references: [id])
+  createdAt   DateTime         @default(now())
+}
