@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# Dependencies
+node_modules/
+
+# Prisma generated client
+**/node_modules/.prisma/
+
+# Logs
+*.log
+npm-debug.log*
