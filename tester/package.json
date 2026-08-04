@@ -1,0 +1,14 @@
+{
+  "name": "scavenger-tester",
+  "version": "1.0.0",
+  "description": "Isolated automated test suite + manual QA dashboard for the Scavenger backend",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-runner.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}
