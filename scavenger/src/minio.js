@@ -60,11 +60,33 @@ export const externalClient = new Minio.Client({
   secretKey: process.env.MINIO_SECRET_KEY,
 });
 
-/** Ensure the bucket exists. Uses the internal client (in-network admin op). */
+// Anonymous read-only policy so authored quest media (and any object) is
+// viewable via a plain, non-expiring URL. Acceptable for this no-auth local/QA
+// stack; do not use a public bucket for sensitive media in production.
+const publicReadPolicy = (bucket) =>
+  JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Effect: "Allow",
+        Principal: { AWS: ["*"] },
+        Action: ["s3:GetObject"],
+        Resource: [`arn:aws:s3:::${bucket}/*`],
+      },
+    ],
+  });
+
+/** Ensure the bucket exists and is publicly readable. Internal admin op. */
 export async function ensureBucket() {
   const exists = await internalClient.bucketExists(BUCKET).catch(() => false);
   if (!exists) {
     await internalClient.makeBucket(BUCKET);
     console.log(`[minio] created bucket "${BUCKET}"`);
+  }
+  try {
+    await internalClient.setBucketPolicy(BUCKET, publicReadPolicy(BUCKET));
+    console.log(`[minio] bucket "${BUCKET}" set public-read`);
+  } catch (err) {
+    console.warn("[minio] setBucketPolicy failed (continuing):", err.message);
   }
 }

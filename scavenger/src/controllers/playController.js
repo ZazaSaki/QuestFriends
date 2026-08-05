@@ -226,6 +226,9 @@ export async function uploadUrl(req, res, next) {
     res.status(200).json({
       uploadUrl: url,
       getUrl,
+      // Durable, non-expiring URL (bucket is public-read) — the object URL
+      // without the presign query string. Use this for authored/stored media.
+      publicUrl: url.split("?")[0],
       objectName,
       bucket: BUCKET,
       method: "PUT",
