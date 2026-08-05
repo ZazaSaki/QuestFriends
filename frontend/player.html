@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Player — Scavenger</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <svg class="compass" viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="20" stroke="#e8a33d" stroke-width="2.5"/>
+      <path d="M31.5 16.5L27 25.5L16.5 31.5L21 22.5L31.5 16.5Z" fill="#e8a33d"/>
+    </svg>
+    Scavenger <span class="role">PLAYER</span>
+  </div>
+  <div class="status">
+    <span class="dot" id="connDot"></span>
+    <span id="connLabel">ligar</span>
+    <button class="settings-toggle" id="settingsToggle">config</button>
+  </div>
+</div>
+<div class="settings-panel hidden" id="settingsPanel">
+  Backend URL
+  <input id="apiBaseInput" type="text" placeholder="http://localhost:9101">
+  <div style="margin-top:8px;"><button class="small rust" id="resetBtn">Sair / trocar de conta</button></div>
+</div>
+
+<div class="wrap">
+
+  <!-- JOIN SCREEN -->
+  <div id="joinScreen">
+    <h1>Entrar no jogo</h1>
+    <p class="muted">Pede o ID da sala a quem está a gerir o jogo.</p>
+    <div class="card">
+      <label>ID da sala</label>
+      <input id="roomIdInput" type="text" placeholder="cole aqui o roomId">
+      <label>O teu nome</label>
+      <input id="usernameInput" type="text" placeholder="bob">
+      <button class="block" id="joinBtn" style="margin-top:14px;">Entrar</button>
+    </div>
+    <div class="card dashed">
+      <div class="eyebrow">Já jogaste antes neste telemóvel?</div>
+      <button class="block secondary" id="resumeBtn" style="margin-top:8px;">Retomar sessão anterior</button>
+    </div>
+  </div>
+
+  <!-- WAITING SCREEN -->
+  <div id="waitScreen" class="hidden center" style="padding-top:40px;">
+    <h2>Estás na equipa <span id="teamNameLabel" class="mono"></span></h2>
+    <p class="muted">À espera que o manager inicie o jogo…</p>
+    <div class="card" style="text-align:left;">
+      <div class="eyebrow">Enquanto esperas</div>
+      <p class="muted" style="font-size:0.85rem;">Mantém esta página aberta e permite o acesso à localização quando for pedido.</p>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen" class="hidden">
+
+    <div class="card" id="locateCard">
+      <div class="card-head"><h3>A caminho do waypoint</h3><span class="badge amber" id="seqBadge">—</span></div>
+      <div class="geo" id="geoBox">a obter posição…</div>
+      <div class="progress-track"><div class="progress-fill" id="distFill" style="width:0%"></div></div>
+      <div class="muted" style="margin-top:8px; font-size:0.8rem;">Entrada exigida: <span id="entryTypeLabel" class="mono"></span></div>
+      <div id="challengeValueWrap" class="hidden" style="margin-top:8px;">
+        <label>Introduz o código / palavra-passe</label>
+        <input id="challengeValueInput" type="text">
+      </div>
+      <button class="block moss" id="unlockBtn" style="margin-top:12px;" disabled>Desbloquear quest</button>
+    </div>
+
+    <div class="card hidden" id="questCard">
+      <div class="card-head"><h3 id="questTitle">Quest</h3><span class="badge" id="questTypeBadge"></span></div>
+      <p id="questDescription" class="mono" style="white-space:pre-wrap;"></p>
+
+      <div id="quizAnswerWrap" class="hidden">
+        <label>A tua resposta</label>
+        <input id="quizAnswerInput" type="text">
+        <button class="block" id="submitQuizBtn" style="margin-top:10px;">Submeter resposta</button>
+      </div>
+
+      <div id="mediaSubmitWrap" class="hidden">
+        <label>Foto / vídeo</label>
+        <input id="mediaFileInput" type="file" accept="image/*,video/*" capture="environment">
+        <button class="block" id="submitMediaBtn" style="margin-top:10px;">Enviar</button>
+        <div class="muted" id="uploadStatus" style="margin-top:6px; font-size:0.8rem;"></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="rewardCard">
+      <div class="card-head"><h3>Aprovado!</h3><span class="badge moss">+<span id="scoreGain"></span> pts</span></div>
+      <div id="rewardText" class="mono"></div>
+      <button class="block" id="continueBtn" style="margin-top:12px;">Continuar</button>
+    </div>
+
+    <div class="card hidden" id="retryCard">
+      <div class="card-head"><h3>Tenta outra vez</h3><span class="badge rust">rejeitado</span></div>
+      <div id="retryText" class="muted"></div>
+    </div>
+  </div>
+
+  <!-- CONCLUSION -->
+  <div id="conclusionScreen" class="hidden center" style="padding-top:40px;">
+    <h1>🎉 Fim de jogo</h1>
+    <div id="conclusionText" class="card"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/player.js"></script>
+</body>
+</html>

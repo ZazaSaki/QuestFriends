@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Staff — Scavenger</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <svg class="compass" viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="20" stroke="#e8a33d" stroke-width="2.5"/>
+      <path d="M31.5 16.5L27 25.5L16.5 31.5L21 22.5L31.5 16.5Z" fill="#e8a33d"/>
+    </svg>
+    Scavenger <span class="role">STAFF</span>
+  </div>
+  <div class="status">
+    <span class="dot" id="connDot"></span>
+    <span id="connLabel">ligar</span>
+    <button class="settings-toggle" id="settingsToggle">config</button>
+  </div>
+</div>
+<div class="settings-panel hidden" id="settingsPanel">
+  Backend URL
+  <input id="apiBaseInput" type="text" placeholder="http://localhost:9101">
+  <div style="margin-top:8px;"><button class="small rust" id="resetBtn">Sair</button></div>
+</div>
+
+<div class="wrap">
+
+  <!-- JOIN SCREEN -->
+  <div id="joinScreen">
+    <h1>Entrar como Staff</h1>
+    <div class="card">
+      <label>ID da sala</label>
+      <input id="roomIdInput" type="text" placeholder="cole aqui o roomId">
+      <label>O teu nome</label>
+      <input id="usernameInput" type="text" placeholder="carol">
+      <label>Palavra-passe da staff (se definida)</label>
+      <input id="staffPasswordInput" type="text" placeholder="s3cret">
+      <button class="block" id="joinBtn" style="margin-top:14px;">Entrar</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashScreen" class="hidden">
+    <div class="card-head" style="margin-top:6px;">
+      <h1>Submissões pendentes</h1>
+      <button class="small secondary" id="refreshBtn">atualizar</button>
+    </div>
+    <div id="pendingList" class="stack"></div>
+
+    <hr class="divider">
+
+    <div class="card-head">
+      <h2>Equipas em campo</h2>
+      <button class="small secondary" id="refreshRosterBtn">atualizar</button>
+    </div>
+    <div id="rosterList" class="stack"></div>
+
+    <hr class="divider">
+    <h2>Posições ao vivo</h2>
+    <p class="muted" style="font-size:0.8rem;">Atualiza conforme os jogadores enviam GPS.</p>
+    <div id="liveLocations" class="list-empty">sem sinais ainda.</div>
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/staff.js"></script>
+</body>
+</html>
