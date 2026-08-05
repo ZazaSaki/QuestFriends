@@ -89,6 +89,10 @@ Open a room; **auto-creates one Team per Track** in the game.
 ```
 → `201 { "id", "status": "OPEN", "teams": [ { "id", "name", "trackId" }, ... ] }`
 
+### `GET /api/rooms?status=OPEN`
+List rooms, optionally filtered by `status` (`OPEN` | `PLAYING` | `FINISHED`). Used by players to discover joinable rooms.
+→ `200 [ { "id", "gameId", "status", "createdAt", "teamCount" } ]`  ·  invalid status → `400`
+
 ### `GET /api/rooms/:roomId`
 Live roster.
 → `200 { "id", "status", "teams": [ { "id", "name", "trackId", "currentSeqNum", "totalScore", "activeQuestId", "track": {...}, "members": [ { "user": { "id", "username" } } ] } ] }`
@@ -110,6 +114,17 @@ Requires the room's `staffPassword` (if set). Upserts the user as STAFF.
 ### `POST /api/rooms/:roomId/start`
 Sets the room to `PLAYING` and emits `game_started` (see [websocket-events.md](websocket-events.md)).
 → `200 { "id", "status": "PLAYING" }`
+
+### `POST /api/rooms/:roomId/end`
+Force-ends ("kills") a room: sets status `FINISHED` and emits `room_closed`
+(`reason: "ended"`) to everyone in the room. The row is kept (soft end).
+→ `200 { "id", "status": "FINISHED" }`
+
+> **Automatic cleanup.** A background janitor also closes rooms: **empty** rooms
+> (nobody ever joined) are **deleted** after ~10 min, and rooms older than 3h are
+> **pinged** (`room_ping`) — if nobody answers they're ended. Both emit
+> `room_closed`. Tunable via env (`ROOM_GC_*`, `ROOM_MAX_AGE_HOURS`, …); disable
+> with `ROOM_GC_ENABLED=false`.
 
 ### `PUT /api/teams/swap-member`
 Move a user between teams.

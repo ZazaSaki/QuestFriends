@@ -35,6 +35,14 @@ services:
 
       MINIO_ACCESS_KEY: ${MINIO_USER}
       MINIO_SECRET_KEY: ${MINIO_PASSWORD}
+
+      # Room janitor (background cleanup) — defaults shown; uncomment to tune.
+      # ROOM_GC_ENABLED: "true"
+      # ROOM_GC_INTERVAL_MS: "60000"       # how often the sweep runs
+      # ROOM_GC_EMPTY_MINUTES: "10"        # delete empty rooms older than this
+      # ROOM_MAX_AGE_HOURS: "3"            # ping rooms older than this
+      # ROOM_LIVENESS_RECHECK_MINUTES: "60"  # if alive, recheck after this
+      # ROOM_LIVENESS_TIMEOUT_MS: "5000"   # how long to wait for a pong
     depends_on:
       - db
       - minio
@@ -57,6 +65,35 @@ services:
     networks:
       backend_net:
         ipv4_address: 10.5.0.15
+
+  # frontend:
+  #   build: ./frontend
+  #   restart: always
+  #   ports:
+  #     - "9112:80" # Player / manager / staff UI (open http://localhost:9112)
+  #   volumes:
+  #     # Static files — edit under ./frontend and just refresh, no rebuild.
+  #     - ./frontend:/usr/share/nginx/html:ro
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     backend_net:
+  #       ipv4_address: 10.5.0.20
+
+  manager:
+    build:
+      context: ./managerFrontend
+      args:
+        # Baked into the static build — the browser talks to the backend here.
+        VITE_API_URL: http://localhost:9101
+        VITE_SOCKET_URL: http://localhost:9101
+    restart: always
+    ports:
+      - "9113:80" # Manager UI (open http://localhost:9113)
+    depends_on:
+      - app
+    networks:
+      - backend_net
 
   tester:
     build: ./tester

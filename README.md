@@ -53,22 +53,25 @@ Everything runs on one Docker network (`backend_net`, subnet `10.5.0.0/16`).
 |----------|----------------------|-------------------------------|--------------|------|
 | `db`     | `postgres:15-alpine` | — (internal only)             | `10.5.0.5`   | PostgreSQL database |
 | `app`    | built `./scavenger`  | **9101** → 3000               | `10.5.0.10`  | REST API + Socket.io |
+| `frontend` | built `./frontend` (nginx) | **9112** → 80         | `10.5.0.20`  | Player / manager / staff UI |
 | `minio`  | `minio/minio`        | **9110** → 9000 (API), **9111** → 9001 (console) | `10.5.0.15` | Object storage for media |
 | `tester` | built `./tester`     | **9121** → 3000               | (dynamic)    | Automated suite + QA dashboard |
 
 ```mermaid
 flowchart LR
-  subgraph Client["🌐 Browser / Frontend / Player device"]
-    FE["Frontend app"]
+  subgraph Client["🌐 Browser / Player device"]
+    FE["Frontend app\n(served from localhost:9112)"]
   end
 
   subgraph Net["Docker network: backend_net (10.5.0.0/16)"]
     APP["app · 10.5.0.10:3000\nExpress + Socket.io"]
     DB[("db · 10.5.0.5:5432\nPostgreSQL")]
     MINIO["minio · 10.5.0.15:9000\nObject storage"]
+    WEB["frontend · 10.5.0.20:80\nnginx static files"]
     TEST["tester · :3000\nsuite + dashboard"]
   end
 
+  WEB -. "serves HTML/CSS/JS to" .-> FE
   FE -- "REST + WebSocket\nhttp://localhost:9101" --> APP
   FE -- "presigned PUT/GET (media)\nhttp://localhost:9110" --> MINIO
   APP -- "SQL · DATABASE_URL\n10.5.0.5:5432" --> DB
@@ -99,6 +102,7 @@ Then:
 
 | What | URL |
 |------|-----|
+| Frontend (player / manager / staff) | http://localhost:9112 |
 | REST API + WebSocket | http://localhost:9101 (`GET /health` to check) |
 | MinIO console | http://localhost:9111 |
 | QA dashboard (God Mode) | http://localhost:9121 |

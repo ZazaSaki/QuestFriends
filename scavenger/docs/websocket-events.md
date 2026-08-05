@@ -24,7 +24,7 @@ A socket subscribes by emitting `join_room`. There are three channel kinds:
 
 | Channel | Who joins | Receives |
 |---------|-----------|----------|
-| `room:<roomId>`  | everyone (`roomId`)            | `game_started` |
+| `room:<roomId>`  | everyone (`roomId`)            | `game_started`, `room_ping`, `room_closed` |
 | `team:<teamId>`  | players (`teamId`)            | `quest_unlocked`, `at_location`, `validation_result` |
 | `staff:<roomId>` | staff (`isStaff: true`)      | `player_location`, `submission_pending` |
 
@@ -60,6 +60,21 @@ Ack of `join_room`. `{ roomId, teamId, isStaff }`
 The manager started the room.
 ```json
 { "roomId": "...", "status": "PLAYING", "at": 1712345678000 }
+```
+
+### `room_ping`  *(room channel — must be acknowledged)*
+A liveness probe from the room janitor for long-lived rooms. **Reply via the ack
+callback** or the room may be considered abandoned and closed.
+```js
+socket.on("room_ping", (data, ack) => ack && ack({ alive: true }));
+```
+
+### `room_closed`  *(room channel)*
+The room was ended/killed — stop the game and show a notice. `reason` is one of
+`ended` (manual kill), `empty_timeout` (deleted, nobody joined), or `abandoned`
+(no reply to `room_ping` after 3h).
+```json
+{ "roomId": "...", "reason": "ended", "status": "FINISHED", "at": 1712345678000 }
 ```
 
 ### `player_location`  *(staff channel)*
