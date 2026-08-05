@@ -5,6 +5,7 @@ import cors from "cors";
 import { Server as SocketIOServer } from "socket.io";
 
 import { registerSocketHandlers } from "./sockets/index.js";
+import { startRoomJanitor } from "./jobs/roomJanitor.js";
 import { ensureBucket } from "./minio.js";
 
 import usersRouter from "./routes/users.js";
@@ -48,6 +49,7 @@ app.use((err, _req, res, _next) => {
 });
 
 registerSocketHandlers(io);
+startRoomJanitor(io);
 
 const PORT = process.env.PORT || 3000;
 

@@ -108,6 +108,7 @@ model Room {
   status        RoomStatus @default(OPEN)
   staffPassword String?    // Optional password for staff to join
   createdAt     DateTime   @default(now())
+  lastCheckedAt DateTime?  // Last liveness ping by the room janitor (null = never)
   teams         Team[]
 }
 
