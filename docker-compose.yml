@@ -31,7 +31,7 @@ services:
       # The URL the Node app gives to the player's phone / browser (External).
       # Must be reachable from wherever the client runs — localhost for local QA,
       # or your server IP / domain in production.
-      MINIO_EXTERNAL_URL: http://localhost:9110
+      MINIO_EXTERNAL_URL: ${MINIO_URL}
 
       MINIO_ACCESS_KEY: ${MINIO_USER}
       MINIO_SECRET_KEY: ${MINIO_PASSWORD}
@@ -85,8 +85,8 @@ services:
       context: ./managerFrontend
       args:
         # Baked into the static build — the browser talks to the backend here.
-        VITE_API_URL: http://localhost:9101
-        VITE_SOCKET_URL: http://localhost:9101
+        VITE_API_URL: ${BACKEND_URL}
+        VITE_SOCKET_URL: ${BACKEND_URL}
     restart: always
     ports:
       - "9113:80" # Manager UI (open http://localhost:9113)
@@ -105,7 +105,7 @@ services:
       # In-Docker-network address the test-runner uses to reach the backend.
       BACKEND_HTTP: http://10.5.0.10:3000
       # Host-mapped URL the browser-based dashboard should use for the backend.
-      PUBLIC_BACKEND_URL: http://localhost:9101
+      PUBLIC_BACKEND_URL: ${BACKEND_URL}
     volumes:
       # Drop test media into ./tester/assets and it is served live (no rebuild).
       - ./tester/assets:/app/assets
