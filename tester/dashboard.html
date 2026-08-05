@@ -54,6 +54,8 @@
       <span id="conn">● not connected</span>
     </div>
 
+    <div id="roomNotice" style="display:none; background:#c62828; color:#fff; font-weight:bold; padding:10px 16px; text-align:center;"></div>
+
     <div class="cols">
       <!-- ========================= MANAGER ========================= -->
       <div class="col manager">
@@ -61,11 +63,12 @@
         <button id="initBtn">1. Init Database &amp; Users</button>
         <button id="questBtn" disabled>2. Generate Test Quests (5)</button>
         <button id="startBtn" disabled>3. Start Game</button>
+        <button id="endBtn" disabled style="background:#c62828">☠ Kill / End Game</button>
         <h3>Created IDs</h3>
         <div id="ids" class="box mono">— nothing yet —</div>
 
-        <h2 style="margin-top:14px">Lobby &amp; Game State</h2>
-        <div id="joinArea" class="row"><small>init first</small></div>
+        <h2 style="margin-top:14px">Game State</h2>
+        <small>Players discover &amp; join from the Player column →</small>
         <h3>Game Roster <small id="rosterMeta"></small></h3>
         <div id="roster" class="box">— init first —</div>
 
@@ -81,6 +84,17 @@
           <select id="playerSel"><option value="0">Player 1</option><option value="1">Player 2</option></select>
           <span id="playerInfo" class="pill">unbound</span>
         </div>
+
+        <h3>Lobby — find &amp; join a room</h3>
+        <div class="row">
+          <button id="openRoomsBtn">Get Open Rooms</button>
+          <select id="openRoomSel"><option value="">— none —</option></select>
+        </div>
+        <div class="row">
+          <button id="joinRoomBtn">Join selected room as this player</button>
+          <span id="joinInfo"><small>not joined</small></span>
+        </div>
+
         <div id="state" class="banner LOCKED">QUEST: LOCKED</div>
 
         <h3>Quest description</h3>
@@ -240,9 +254,10 @@
             G.players.push({ id: u.id, username: u.username, teamId: null, joined: false });
           }
           connectSocket();
-          renderIds(); renderJoinButtons(); startRosterPolling();
+          renderIds(); startRosterPolling(); getOpenRooms();
           bindPlayer(); bindStaff();
           $("questBtn").disabled = false;
+          $("endBtn").disabled = false;
           log("✔ init complete — now Join Room the players");
         } catch (e) { log("init error: " + e.message); $("initBtn").disabled = false; }
       };
@@ -308,6 +323,11 @@
         const r = await api("POST", `/api/rooms/${G.room.id}/start`);
         log("📢 game started", r.body && r.body.status);
       };
+      $("endBtn").onclick = async () => {
+        if (!G.room) return;
+        const r = await api("POST", `/api/rooms/${G.room.id}/end`);
+        log("☠ end game ← " + r.status, r.body && r.body.status);
+      };
 
       function renderIds() {
         $("ids").textContent =
@@ -318,18 +338,39 @@
           G.teams.map((t) => "team " + t.name + " : " + t.id).join("\n");
       }
 
-      function renderJoinButtons() {
-        $("joinArea").innerHTML = "";
-        G.players.forEach((p, i) => {
-          const b = document.createElement("button");
-          b.textContent = "Join Room: " + p.username;
-          b.onclick = async () => {
-            const r = await api("POST", `/api/rooms/${G.room.id}/join-player`, { username: p.username });
-            if (r.ok) { p.teamId = r.body.team.id; p.joined = true; b.disabled = true; log("🚪 joined", { player: p.username, team: p.teamId }); refreshRoster(); }
-          };
-          $("joinArea").appendChild(b);
+      // ---- Player-facing lobby: discover open rooms & join one ----
+      async function getOpenRooms() {
+        const r = await api("GET", "/api/rooms?status=OPEN");
+        const sel = $("openRoomSel");
+        sel.innerHTML = "";
+        const rooms = Array.isArray(r.body) ? r.body : [];
+        if (!rooms.length) { sel.innerHTML = "<option value=''>— no open rooms —</option>"; log("no open rooms"); return; }
+        rooms.forEach((rm) => {
+          const o = document.createElement("option");
+          o.value = rm.id;
+          o.textContent = "room " + rm.id.slice(0, 8) + " · game " + rm.gameId.slice(0, 8) + " · teams " + rm.teamCount;
+          if (G.room && rm.id === G.room.id) o.selected = true; // default to the one just created
+          sel.appendChild(o);
         });
+        log("🔎 open rooms: " + rooms.length);
       }
+
+      async function joinSelectedRoom() {
+        const p = activePlayer();
+        if (!p) return log("init first (creates player users)");
+        const roomId = $("openRoomSel").value;
+        if (!roomId) return log("get open rooms & select one first");
+        const r = await api("POST", `/api/rooms/${roomId}/join-player`, { username: p.username });
+        if (!r.ok) return;
+        p.teamId = r.body.team.id; p.joined = true;
+        // Subscribe this socket to the joined team's channel (works for any room).
+        if (G.socket) G.socket.emit("join_room", { roomId, teamId: p.teamId });
+        $("joinInfo").innerHTML = "<small>joined team " + p.teamId.slice(0, 8) + "</small>";
+        log("🚪 joined", { player: p.username, room: roomId.slice(0, 8), team: p.teamId });
+        bindPlayer(); refreshRoster(); await refreshTeamView(p);
+      }
+      $("openRoomsBtn").onclick = getOpenRooms;
+      $("joinRoomBtn").onclick = joinSelectedRoom;
 
       function renderCheat() {
         let h = "<table><tr><th>Seq</th><th>Quest</th><th>Entry</th><th>Team A (Track 1) GPS</th><th>Team B (Track 2) GPS</th></tr>";
@@ -387,6 +428,20 @@
           G.socket.on("disconnect", () => { $("conn").textContent = "● disconnected"; });
           G.socket.on("game_started", (p) => log("📢 game_started", p));
 
+          // Room lifecycle: liveness ping (reply so the room counts as alive)…
+          G.socket.on("room_ping", (data, ack) => {
+            if (typeof ack === "function") ack({ alive: true });
+            log("🏓 room_ping → pong", data);
+          });
+          // …and closure notice (manual kill, empty-GC, or 3h abandoned).
+          G.socket.on("room_closed", (p) => {
+            const reason = { ended: "ended by manager", empty_timeout: "removed (empty/unused)", abandoned: "closed (abandoned 3h+)" }[p.reason] || p.reason;
+            $("roomNotice").style.display = "block";
+            $("roomNotice").textContent = "⛔ ROOM CLOSED — " + reason;
+            setBanner("FINISHED", "ROOM CLOSED");
+            log("⛔ room_closed", p);
+          });
+
           G.socket.on("quest_unlocked", (p) => {
             const ts = getTS(p.teamId);
             ts.status = "UNLOCKED"; ts.questContent = p.content; ts.reward = null;
@@ -432,6 +487,7 @@
       function bindPlayer() {
         const p = activePlayer();
         $("playerInfo").textContent = p ? p.username + (p.teamId ? " · team " + p.teamId.slice(0, 8) : " · not joined") : "unbound";
+        $("joinInfo").innerHTML = p && p.joined ? "<small>joined team " + p.teamId.slice(0, 8) + "</small>" : "<small>not joined</small>";
       }
       $("playerSel").onchange = async () => { bindPlayer(); const p = activePlayer(); if (p && p.teamId) await refreshTeamView(p); else renderPlayer(); };
 
