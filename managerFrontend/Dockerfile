@@ -2,9 +2,12 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Backend URLs are baked into the static build (Vite inlines VITE_* at build time).
-ARG VITE_API_URL=http://localhost:9101
-ARG VITE_SOCKET_URL=http://localhost:9101
+# Backend URLs baked into the static build (Vite inlines VITE_* at build time).
+# Empty default = SAME-ORIGIN: the app calls /api and /socket.io on its own host
+# and nginx reverse-proxies them (works locally and behind one Cloudflare tunnel).
+# Only set these to an absolute URL if the backend lives on a different origin.
+ARG VITE_API_URL=
+ARG VITE_SOCKET_URL=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 

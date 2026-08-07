@@ -84,9 +84,11 @@ services:
     build:
       context: ./managerFrontend
       args:
-        # Baked into the static build — the browser talks to the backend here.
-        VITE_API_URL: ${BACKEND_URL}
-        VITE_SOCKET_URL: ${BACKEND_URL}
+        # Same-origin: the SPA calls /api and /socket.io on its own host and this
+        # container's nginx reverse-proxies them to the backend & MinIO. Works
+        # locally and behind a single Cloudflare tunnel (no CORS/mixed-content).
+        VITE_API_URL: ""
+        VITE_SOCKET_URL: ""
     restart: always
     ports:
       - "9113:80" # Manager UI (open http://localhost:9113)

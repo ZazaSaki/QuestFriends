@@ -1,5 +1,9 @@
 // Backend base URL — baked at build time by Vite (see Dockerfile / compose args).
-export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9101';
+// Default is same-origin ('') so requests go to /api/... on the page's own host
+// and nginx reverse-proxies them to the backend (works locally and behind a
+// single Cloudflare tunnel — no CORS, no mixed content). Set VITE_API_URL to an
+// absolute URL only if the backend is on a different origin.
+export const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(API_BASE + path, {

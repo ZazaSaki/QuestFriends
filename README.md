@@ -91,6 +91,23 @@ See [`scavenger/docs/media-and-minio.md`](scavenger/docs/media-and-minio.md) for
 
 ---
 
+## Deploying the manager behind a single Cloudflare tunnel
+
+The manager UI is **same-origin**: its nginx reverse-proxies `/api`, `/socket.io`
+(WebSocket) and `/scavenger` (MinIO media) to the in-network services, so one
+hostname serves the app, its data, sockets and images over HTTPS — no CORS, no
+mixed content, no second tunnel.
+
+1. Point one Cloudflare hostname at the **manager** container (`:9113` → nginx `:80`) at the **root** path.
+2. In `.env`, set `MINIO_URL=https://YOUR_HOST` (so media URLs resolve through the proxy). `BACKEND_URL` only affects the QA dashboard.
+3. Rebuild the manager and recreate `app`: `docker compose up -d --build manager app`.
+4. In the Cloudflare dashboard: **turn OFF Rocket Loader** (Speed → Optimization) — it rewrites the JS bundle and causes a blank page; ensure **WebSockets** are ON (Network); SSL/TLS **Full**; then **purge cache**.
+
+> A white page over Cloudflare while direct-IP works is almost always **Rocket
+> Loader** (or another JS-optimization feature) mangling the module bundle.
+
+---
+
 ## Quick start
 
 ```bash
