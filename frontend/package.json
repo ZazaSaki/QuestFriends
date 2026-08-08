@@ -1,0 +1,13 @@
+{
+  "name": "scavenger-frontend",
+  "version": "1.0.0",
+  "description": "Static frontend (manager / player / staff) for the Scavenger backend",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}

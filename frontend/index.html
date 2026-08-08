@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Scavenger — Caça ao Tesouro</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="/config.js"></script>
 </head>
 <body>
 
@@ -32,12 +33,12 @@
   <p class="muted">Cada papel fala com o mesmo backend — escolhe consoante o que vais fazer agora.</p>
 
   <div class="role-cards">
-    <a class="role-card" href="manager.html">
+    <a class="role-card" href="http://localhost:9106" target="_blank" rel="noopener">
       <span class="eyebrow">01 · Antes do jogo</span>
       <h2>Manager</h2>
-      <p>Cria o jogo, escreve as quests, desenha as rotas (tracks) e abre a sala.</p>
+      <p>Cria o jogo, escreve as quests, desenha as rotas (tracks) e abre a sala. Abre numa aba separada — é outra aplicação (React), a correr na porta 9106.</p>
     </a>
-    <a class="role-card" href="player.html">
+    <a class="role-card" href="player.html" target="_blank">
       <span class="eyebrow">02 · Em campo</span>
       <h2>Player</h2>
       <p>Junta-te a uma equipa, segue o GPS até cada waypoint e resolve os desafios.</p>
