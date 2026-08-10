@@ -1,6 +1,8 @@
 /* Shared helpers used by manager.js / player.js / staff.js */
 
-const DEFAULT_API_BASE = "http://localhost:9101";
+// Set by /config.js (injected server-side from PUBLIC_BACKEND_URL). Falls back
+// to localhost for the case where the file is opened directly, with no server.
+const DEFAULT_API_BASE = window.__DEFAULT_API_BASE__ || "http://localhost:9101";
 
 function getApiBase() {
   return localStorage.getItem("scavenger_api_base") || DEFAULT_API_BASE;

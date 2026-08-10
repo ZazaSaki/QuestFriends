@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Staff — Scavenger</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="/config.js"></script>
 </head>
 <body>
 
@@ -15,17 +17,14 @@
       <path d="M31.5 16.5L27 25.5L16.5 31.5L21 22.5L31.5 16.5Z" fill="#e8a33d"/>
     </svg>
     Scavenger <span class="role">STAFF</span>
+    <a class="role" href="index.html">
+      MENU
+    </a>
   </div>
   <div class="status">
     <span class="dot" id="connDot"></span>
     <span id="connLabel">ligar</span>
-    <button class="settings-toggle" id="settingsToggle">config</button>
   </div>
-</div>
-<div class="settings-panel hidden" id="settingsPanel">
-  Backend URL
-  <input id="apiBaseInput" type="text" placeholder="http://localhost:9101">
-  <div style="margin-top:8px;"><button class="small rust" id="resetBtn">Sair</button></div>
 </div>
 
 <div class="wrap">
@@ -46,29 +45,76 @@
 
   <!-- DASHBOARD -->
   <div id="dashScreen" class="hidden">
-    <div class="card-head" style="margin-top:6px;">
-      <h1>Submissões pendentes</h1>
-      <button class="small secondary" id="refreshBtn">atualizar</button>
-    </div>
-    <div id="pendingList" class="stack"></div>
 
-    <hr class="divider">
+    <nav class="tabbar" id="tabbar">
+      <button class="tab active" data-tab="quests">Quests <span class="tab-count" id="tabCountQuests"></span></button>
+      <button class="tab" data-tab="teams">Equipas</button>
+      <button class="tab" data-tab="live">Ao vivo</button>
+    </nav>
 
-    <div class="card-head">
-      <h2>Equipas em campo</h2>
-      <button class="small secondary" id="refreshRosterBtn">atualizar</button>
-    </div>
-    <div id="rosterList" class="stack"></div>
+    <!-- TAB: Quests (approval chat) -->
+    <section class="tabpanel" id="panel-quests">
 
-    <hr class="divider">
-    <h2>Posições ao vivo</h2>
-    <p class="muted" style="font-size:0.8rem;">Atualiza conforme os jogadores enviam GPS.</p>
-    <div id="liveLocations" class="list-empty">sem sinais ainda.</div>
+      <!-- LIST VIEW: one row per quest, tap to open -->
+      <div id="questListView">
+        <div class="card-head" style="margin-top:16px;">
+          <h1>Quests</h1>
+          <button class="small secondary" id="refreshQuestsBtn">atualizar</button>
+        </div>
+        <p class="muted" style="font-size:0.78rem; margin-bottom:14px;">
+          Toca numa quest para abrir a conversa — só vês (e só respondes a) uma de cada vez, para não aprovares a errada por engano.
+        </p>
+        <div id="questList" class="stack"></div>
+      </div>
+
+      <!-- DETAIL VIEW: a single quest's conversation -->
+      <div id="questDetailView" class="hidden">
+        <button class="small secondary" id="backToQuestListBtn" style="margin-top:16px;">‹ voltar às quests</button>
+        <div id="questDetailBody" style="margin-top:14px;"></div>
+      </div>
+
+    </section>
+
+    <!-- TAB: Teams -->
+    <section class="tabpanel hidden" id="panel-teams">
+      <div class="card-head" style="margin-top:16px;">
+        <h1>Equipas</h1>
+        <button class="small secondary" id="refreshTeamsBtn">atualizar</button>
+      </div>
+      <input id="teamSearchInput" type="text" placeholder="procurar equipa ou jogador…" style="margin-bottom:6px;">
+      <p class="muted" style="font-size:0.78rem; margin-bottom:14px;">
+        Arrasta um jogador de uma equipa para outra para o mover — ou, em ecrãs táteis,
+        toca no jogador e depois toca na equipa de destino.
+      </p>
+      <div id="teamsBoard" class="teams-board"></div>
+    </section>
+
+    <!-- TAB: Live -->
+    <section class="tabpanel hidden" id="panel-live">
+      <div class="card-head" style="margin-top:16px;">
+        <h1>Ao vivo</h1>
+        <button class="small secondary" id="refreshLiveBtn">atualizar</button>
+      </div>
+
+      <h3>Scoreboard</h3>
+      <p class="muted" style="font-size:0.78rem; margin-bottom:10px;">Ranking das equipas por pontuação.</p>
+      <div id="scoreboard" class="stack"></div>
+
+      <hr class="divider">
+
+      <h3 style="margin-top:6px;">Mapa</h3>
+      <p class="muted" style="font-size:0.78rem; margin-bottom:10px;">Posição de cada jogador, conforme vão enviando GPS.</p>
+      <div id="liveMap" class="live-map"></div>
+      <div id="liveMapEmpty" class="list-empty" style="margin-top:10px;">sem sinais de GPS ainda.</div>
+
+    </section>
+
   </div>
 
 </div>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/api.js"></script>
 <script src="js/staff.js"></script>
 </body>

@@ -39,40 +39,6 @@ export async function createRoom(req, res, next) {
   }
 }
 
-const ROOM_STATUSES = ["OPEN", "PLAYING", "FINISHED"];
-
-/**
- * GET /api/rooms?status=OPEN&gameId=<id>
- * List rooms, optionally filtered by status and/or game.
- */
-export async function listRooms(req, res, next) {
-  try {
-    const { status, gameId } = req.query;
-    if (status && !ROOM_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `status must be one of ${ROOM_STATUSES.join(", ")}` });
-    }
-    const rooms = await prisma.room.findMany({
-      where: {
-        ...(status ? { status } : {}),
-        ...(gameId ? { gameId: String(gameId) } : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      include: { _count: { select: { teams: true } } },
-    });
-    res.status(200).json(
-      rooms.map((r) => ({
-        id: r.id,
-        gameId: r.gameId,
-        status: r.status,
-        createdAt: r.createdAt,
-        teamCount: r._count.teams,
-      }))
-    );
-  } catch (err) {
-    next(err);
-  }
-}
-
 /**
  * GET /api/rooms/:roomId
  * Live roster: the room with its teams, each team's members (username), and
@@ -81,17 +47,32 @@ export async function listRooms(req, res, next) {
 export async function getRoom(req, res, next) {
   try {
     const { roomId } = req.params;
+
     const room = await prisma.room.findUnique({
       where: { id: roomId },
       include: {
         teams: {
           include: {
-            track: { select: { id: true, name: true } },
+            track: {
+              select: {
+                id: true,
+                name: true,
+                waypoints: {
+                  select: {
+                    sequenceOrder: true,
+                    questId: true,
+                    quest: { select: { id: true, title: true } },
+                  },
+                  orderBy: { sequenceOrder: "asc" },
+                },
+              },
+            },
             members: { include: { user: { select: { id: true, username: true } } } },
           },
         },
       },
     });
+
     if (!room) return res.status(404).json({ error: "Room not found" });
     res.status(200).json(room);
   } catch (err) {
@@ -180,37 +161,6 @@ export async function joinStaff(req, res, next) {
 }
 
 /**
- * POST /api/rooms/:roomId/end
- * Force-ends a room ("kill"): sets status FINISHED and notifies everyone in the
- * room via a `room_closed` socket event. The row is kept (soft end).
- */
-export async function endRoom(req, res, next) {
-  try {
-    const { roomId } = req.params;
-
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
-    if (!room) return res.status(404).json({ error: "Room not found" });
-
-    const updated = await prisma.room.update({
-      where: { id: roomId },
-      data: { status: "FINISHED" },
-    });
-
-    const io = req.app.get("io");
-    io.to(roomChannel(roomId)).emit("room_closed", {
-      roomId,
-      reason: "ended",
-      status: "FINISHED",
-      at: Date.now(),
-    });
-
-    res.status(200).json(updated);
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
  * POST /api/rooms/:roomId/start
  * Sets the room to PLAYING and emits `game_started` to the room channel.
  */
@@ -238,3 +188,5 @@ export async function startRoom(req, res, next) {
     next(err);
   }
 }
+
+
