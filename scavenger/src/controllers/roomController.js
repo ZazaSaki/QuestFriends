@@ -189,4 +189,29 @@ export async function startRoom(req, res, next) {
   }
 }
 
+/**
+ * GET /api/rooms?gameId=<gameId>
+ * List rooms, optionally filtered by game (for the Manager dashboard).
+ */
+export async function listRooms(req, res, next) {
+  try {
+    const { gameId } = req.query;
+    const rooms = await prisma.room.findMany({
+      where: gameId ? { gameId } : undefined,
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { teams: true } } },
+    });
 
+    res.status(200).json(
+      rooms.map((r) => ({
+        id: r.id,
+        gameId: r.gameId,
+        status: r.status,
+        createdAt: r.createdAt,
+        teamCount: r._count.teams,
+      }))
+    );
+  } catch (err) {
+    next(err);
+  }
+}
