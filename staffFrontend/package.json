@@ -1,0 +1,13 @@
+{
+  "name": "scavenger-staff",
+  "version": "1.0.0",
+  "description": "Static Staff dashboard for the Scavenger backend — quest approval, teams, live map",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}
