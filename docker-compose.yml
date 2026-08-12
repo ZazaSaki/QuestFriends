@@ -80,6 +80,27 @@ services:
   #     backend_net:
   #       ipv4_address: 10.5.0.20
 
+  player:
+    build:
+      context: ./player
+      args:
+        # Backend API + WebSocket URLs. Vite INLINES VITE_* at build time, so
+        # these are build args, not runtime env — changing them needs a rebuild.
+        # Empty = same-origin: the SPA calls /api, /socket.io and /scavenger on
+        # its own host and this container's nginx reverse-proxies them to the
+        # backend & MinIO. Works locally, on a LAN IP (phones), and behind a
+        # single Cloudflare tunnel — no CORS, no mixed content.
+        # Set to an absolute URL only if the backend is on another origin.
+        VITE_API_URL: ""
+        VITE_SOCKET_URL: ""
+    restart: always
+    ports:
+      - "9103:80" # Player UI (open http://localhost:9103 on the phone)
+    depends_on:
+      - app
+    networks:
+      - backend_net
+
   manager:
     build:
       context: ./managerFrontend
@@ -97,24 +118,24 @@ services:
     networks:
       - backend_net
 
-  tester:
-    build: ./tester
-    restart: "no"
-    ports:
-      - "9121:3000" # Manual QA dashboard (open http://localhost:9121)
-    environment:
-      PORT: 3000
-      # In-Docker-network address the test-runner uses to reach the backend.
-      BACKEND_HTTP: http://10.5.0.10:3000
-      # Host-mapped URL the browser-based dashboard should use for the backend.
-      PUBLIC_BACKEND_URL: ${BACKEND_URL}
-    volumes:
-      # Drop test media into ./tester/assets and it is served live (no rebuild).
-      - ./tester/assets:/app/assets
-    depends_on:
-      - app
-    networks:
-      - backend_net
+  # tester:
+  #   build: ./tester
+  #   restart: "no"
+  #   ports:
+  #     - "9121:3000" # Manual QA dashboard (open http://localhost:9121)
+  #   environment:
+  #     PORT: 3000
+  #     # In-Docker-network address the test-runner uses to reach the backend.
+  #     BACKEND_HTTP: http://10.5.0.10:3000
+  #     # Host-mapped URL the browser-based dashboard should use for the backend.
+  #     PUBLIC_BACKEND_URL: ${BACKEND_URL}
+  #   volumes:
+  #     # Drop test media into ./tester/assets and it is served live (no rebuild).
+  #     - ./tester/assets:/app/assets
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - backend_net
 
 volumes:
   pgdata:

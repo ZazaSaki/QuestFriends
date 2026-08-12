@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Quest Camera</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f3f3f4",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#6d3000",
+                        "tertiary-fixed": "#e6e2dc",
+                        "outline-variant": "#c2c8c2",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f0f1f1",
+                        "inverse-surface": "#2f3131",
+                        "on-secondary-fixed": "#321200",
+                        "surface-container-highest": "#e2e2e2",
+                        "tertiary-fixed-dim": "#c9c6c0",
+                        "on-background": "#1a1c1c",
+                        "inverse-primary": "#b6ccbe",
+                        "surface-dim": "#dadada",
+                        "primary-fixed-dim": "#b6ccbe",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#ffb68c",
+                        "tertiary": "#22221e",
+                        "on-secondary-fixed-variant": "#753400",
+                        "surface": "#f9f9f9",
+                        "background": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#0c1f16",
+                        "on-surface": "#1a1c1c",
+                        "on-tertiary-fixed-variant": "#484743",
+                        "surface-variant": "#e2e2e2",
+                        "surface-tint": "#4f6358",
+                        "on-surface-variant": "#424844",
+                        "secondary": "#994703",
+                        "on-primary-container": "#90a598",
+                        "on-tertiary-fixed": "#1c1c18",
+                        "on-primary-fixed-variant": "#384b40",
+                        "primary-container": "#283b31",
+                        "tertiary-container": "#383733",
+                        "secondary-container": "#fc934f",
+                        "outline": "#737874",
+                        "secondary-fixed": "#ffdbc9",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#13251c",
+                        "surface-container-high": "#e8e8e8",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#d2e8d9",
+                        "on-tertiary-container": "#a2a09b",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#eeeeee"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "container-margin": "24px",
+                        "stack-lg": "32px",
+                        "section-padding": "48px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "headline-xl": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Playfair Display"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #000; }
+        .camera-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            background-size: cover;
+            background-position: center;
+        }
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body class="text-on-primary">
+<!-- Camera Viewfinder Background -->
+<div class="camera-bg" data-alt="A first-person viewpoint looking through a camera lens at a lush, ancient mystical forest. The lighting is soft and ethereal, filtering through a thick canopy of ancient trees. The scene is atmospheric, mysterious, and serene, fitting the soft minimalist, spiritual quest visual style. Colors are muted greens, deep shadows, and soft light rays." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAHJ-K4TgB_lndWHVscSGYf2kPyyJvoBQULeRG1uuY4y_6_K2LoB_eyK1SmIv-5m_SVK-5PxgS1EydxljiJPewiaoGmjcCzrI4VlPMtVKtRsmrFddzODDHJUULabOjjWSL4qx_42SlFopawYFlRZrCz2ISwAadMOazjBOOlTcsmsZT4snjNY6Ic0E-IE1yTvqo4tLCvhKnQVbzDKCvooe0126E6TtJ_p26CeuzrDoA_WxffAMiN3A2KPQ')"></div>
+<div class="ui-layer">
+<!-- Top Controls -->
+<div class="flex items-center justify-between px-container-margin py-stack-md pt-12">
+<button aria-label="Cancel" class="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-on-primary hover:bg-black/60 transition-colors">
+<span class="material-symbols-outlined" data-icon="close" data-weight="fill" style="font-variation-settings: 'FILL' 1;">close</span>
+</button>
+<div class="flex gap-4">
+<button aria-label="Toggle Flash" class="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-on-primary hover:bg-black/60 transition-colors">
+<span class="material-symbols-outlined" data-icon="flash_off" data-weight="fill" style="font-variation-settings: 'FILL' 1;">flash_off</span>
+</button>
+</div>
+</div>
+<!-- Target Reticle (Decorative) -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+<div class="w-64 h-64 border border-on-primary rounded-3xl opacity-50"></div>
+<div class="absolute w-2 h-2 bg-on-primary rounded-full"></div>
+</div>
+<!-- Bottom Controls -->
+<div class="pb-12 pt-8 px-container-margin bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center">
+<!-- Mode Toggle -->
+<div class="flex gap-8 mb-8 font-label-md text-label-md">
+<button class="text-secondary-container drop-shadow-md">PHOTO</button>
+<button class="text-on-primary/60 hover:text-on-primary drop-shadow-md transition-colors">VIDEO</button>
+</div>
+<div class="flex items-center justify-between w-full max-w-sm">
+<!-- Gallery preview -->
+<button aria-label="Gallery" class="w-14 h-14 rounded-xl border border-on-primary/30 overflow-hidden bg-surface-container-low/20 backdrop-blur-sm">
+<div class="w-full h-full" data-alt="A small thumbnail image showing a previously captured photo of an intricate, weathered stone carving covered in moss, taken in a sunlit forest. The lighting is warm and natural." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDi5rljNhTlUyBswgm0lJgahYc-2CP--xMVRx--2p-KRnjTCThUsCceFihcZt8lMh8xHDohtHppdvMbKDM0U8gZpDQVQ4vr3YdKpIV0zHXwRufGMMchLGUm2aVulvG6ntImP6RdBteEH0FI83RP8Ci4sghj526iIvcQu4El5Y4YWL_KHvKLo_-BePScdN4skahZg7sim-wY3EFV3Rl-EGicUid1zDAR2oj-VrS8EDT8NCWWJP_YPpOiLA')"></div>
+</button>
+<!-- Shutter Button -->
+<button class="w-20 h-20 rounded-full border-4 border-on-primary flex items-center justify-center active:scale-95 transition-transform">
+<div class="w-16 h-16 rounded-full bg-on-primary"></div>
+</button>
+<!-- Switch Camera -->
+<button aria-label="Switch Camera" class="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-on-primary hover:bg-black/60 transition-colors">
+<span class="material-symbols-outlined" data-icon="flip_camera_ios" data-weight="fill" style="font-variation-settings: 'FILL' 1;">flip_camera_ios</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

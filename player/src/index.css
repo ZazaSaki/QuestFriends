@@ -1,0 +1,316 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Every rule below is lifted from the <style> blocks Google Stitch emitted in
+ * player/baseline/stitch_quest_expedition_ui/**\/code.html. The light values come
+ * from the light screens, the `prefers-color-scheme: dark` overrides from the
+ * matching *_dark screens (canvas #1a1a1a, cards #2a2a2a, black-tinted shadows).
+ */
+
+@layer base {
+  html {
+    /* Fills the notch/home-indicator area on iOS with the app canvas. */
+    background-color: #fcf8f2;
+  }
+
+  body {
+    background-color: #fcf8f2; /* Cream "parchment" canvas */
+    color: #13251c; /* Dark green text */
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html {
+      background-color: #1a1a1a;
+    }
+    body {
+      background-color: #1a1a1a;
+      color: #e2e2e2;
+    }
+  }
+
+  /* Material Symbols: outlined by default, `.fill` opts into the filled cut. */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .material-symbols-outlined.fill {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+}
+
+@layer components {
+  /* --- Elevation (DESIGN.md "Ambient Shadows") --------------------------- */
+  .ambient-shadow-md,
+  .shadow-ambient-md {
+    box-shadow: 0px 4px 12px rgba(40, 59, 49, 0.05);
+  }
+
+  .shadow-ambient-lg {
+    box-shadow: 0px 8px 24px rgba(40, 59, 49, 0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ambient-shadow-md,
+    .shadow-ambient-md {
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+    }
+    .shadow-ambient-lg {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  /* --- Inputs (waiting_room) -------------------------------------------- */
+  .brand-input {
+    background-color: #fcf8f2;
+    border: 1px solid rgba(40, 59, 49, 0.2);
+    color: #13251c;
+    transition: all 0.3s ease;
+  }
+
+  .brand-input:focus {
+    border-color: #d97736;
+    outline: none;
+    box-shadow: 0 0 0 1px #d97736;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .brand-input {
+      background-color: #2a2a2a;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+  }
+
+  /* --- Mission card (mission_screen / mission_screen_dark) --------------- */
+  .mission-card {
+    background-color: #ffffff;
+    box-shadow: 0px 4px 12px rgba(40, 59, 49, 0.05);
+    border: 1px solid transparent;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .mission-card {
+      background: linear-gradient(145deg, #2a2a2a, #222222);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  /* --- Waiting-room pulse ------------------------------------------------ */
+  .pulse-dot {
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  /* --- Audio visualiser (mission_screen_dark) --------------------------- */
+  .audio-wave {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+  }
+
+  .wave-bar {
+    width: 4px;
+    background-color: #994703;
+    border-radius: 2px;
+    animation: wave 1s ease-in-out infinite alternate;
+  }
+
+  .wave-bar:nth-child(2) {
+    animation-delay: -0.2s;
+  }
+  .wave-bar:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  .wave-bar:nth-child(4) {
+    animation-delay: -0.6s;
+  }
+  .wave-bar:nth-child(5) {
+    animation-delay: -0.8s;
+  }
+
+  /* --- QR viewfinder (quest_access_qr_password) ------------------------- */
+  .scanner-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 280px;
+    margin: 0 auto;
+    border-radius: 2rem;
+    overflow: hidden;
+    box-shadow: 0 0 0 2000px rgba(19, 37, 28, 0.85);
+  }
+
+  .scanner-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid #fc934f;
+    border-radius: inherit;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border: 4px solid #fc934f;
+    z-index: 20;
+  }
+
+  .corner-tl {
+    top: 16px;
+    left: 16px;
+    border-right: none;
+    border-bottom: none;
+    border-top-left-radius: 12px;
+  }
+  .corner-tr {
+    top: 16px;
+    right: 16px;
+    border-left: none;
+    border-bottom: none;
+    border-top-right-radius: 12px;
+  }
+  .corner-bl {
+    bottom: 16px;
+    left: 16px;
+    border-right: none;
+    border-top: none;
+    border-bottom-left-radius: 12px;
+  }
+  .corner-br {
+    bottom: 16px;
+    right: 16px;
+    border-left: none;
+    border-top: none;
+    border-bottom-right-radius: 12px;
+  }
+
+  .scanning-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #fc934f;
+    box-shadow: 0 0 8px #fc934f;
+    animation: scan 3s linear infinite;
+    z-index: 15;
+  }
+
+  /* html5-qrcode injects its own <video>/<img> into the frame — make them fill
+     it and drop the library's default border/shadow so only ours shows. */
+  .scanner-frame video,
+  .scanner-frame img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    display: block;
+  }
+
+  .scanner-frame #qr-shaded-region {
+    display: none !important;
+  }
+
+  /* --- Camera capture screen (mission_camera) --------------------------- */
+  .camera-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    background-color: #000;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .ui-layer {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* --- Wrong-passcode feedback ------------------------------------------ */
+  .shake {
+    animation: shake 0.4s ease-in-out;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+}
+
+@keyframes wave {
+  0% {
+    height: 8px;
+  }
+  100% {
+    height: 24px;
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}

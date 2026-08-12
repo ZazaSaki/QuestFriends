@@ -1,0 +1,277 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>EJAS26 - Mission</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@400..700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface-variant": "#424844",
+                      "inverse-on-surface": "#f0f1f1",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#a2a09b",
+                      "on-secondary-container": "#6d3000",
+                      "primary-fixed": "#d2e8d9",
+                      "on-tertiary-fixed": "#1c1c18",
+                      "surface-tint": "#4f6358",
+                      "surface-bright": "#f9f9f9",
+                      "on-tertiary-fixed-variant": "#484743",
+                      "on-primary-fixed": "#0c1f16",
+                      "error": "#ba1a1a",
+                      "on-primary-container": "#90a598",
+                      "surface-container": "#eeeeee",
+                      "surface-variant": "#e2e2e2",
+                      "surface-container-low": "#f3f3f4",
+                      "on-error": "#ffffff",
+                      "surface-dim": "#dadada",
+                      "outline": "#737874",
+                      "tertiary-container": "#383733",
+                      "surface-container-lowest": "#ffffff",
+                      "background": "#1a1a1a",
+                      "on-primary-fixed-variant": "#384b40",
+                      "on-secondary-fixed-variant": "#753400",
+                      "secondary-fixed": "#ffdbc9",
+                      "on-secondary": "#ffffff",
+                      "primary": "#13251c",
+                      "inverse-primary": "#b6ccbe",
+                      "outline-variant": "#c2c8c2",
+                      "tertiary": "#22221e",
+                      "primary-fixed-dim": "#b6ccbe",
+                      "on-background": "#e2e2e2",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed": "#321200",
+                      "tertiary-fixed": "#e6e2dc",
+                      "tertiary-fixed-dim": "#c9c6c0",
+                      "error-container": "#ffdad6",
+                      "surface-container-highest": "#333333",
+                      "inverse-surface": "#f0f1f1",
+                      "surface": "#222222",
+                      "secondary-fixed-dim": "#ffb68c",
+                      "on-surface": "#e2e2e2",
+                      "secondary": "#d97736",
+                      "primary-container": "#283b31",
+                      "secondary-container": "#fc934f",
+                      "surface-container-high": "#2a2a2a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "unit": "8px",
+                      "section-padding": "48px",
+                      "stack-lg": "32px",
+                      "gutter": "16px",
+                      "container-margin": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "headline-xl": [
+                              "Playfair Display"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-xl": [
+                              "40px",
+                              {
+                                      "lineHeight": "48px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "500"
+                              }
+                      }
+              }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: #1a1a1a;
+            color: #e2e2e2;
+        }
+        .mission-card {
+            background: linear-gradient(145deg, #2a2a2a, #222222);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .audio-wave {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+        }
+        .wave-bar {
+            width: 4px;
+            background-color: theme('colors.secondary');
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite alternate;
+        }
+        .wave-bar:nth-child(2) { animation-delay: -0.2s; }
+        .wave-bar:nth-child(3) { animation-delay: -0.4s; }
+        .wave-bar:nth-child(4) { animation-delay: -0.6s; }
+        .wave-bar:nth-child(5) { animation-delay: -0.8s; }
+        
+        @keyframes wave {
+            0% { height: 8px; }
+            100% { height: 24px; }
+        }
+    </style>
+</head>
+<body class="antialiased pb-[100px] min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-primary-container text-primary dark:text-inverse-primary docked full-width top-0 shadow-md flex justify-between items-center px-container-margin py-4 w-full z-40 sticky">
+<button aria-label="Menu" class="hover:opacity-80 transition-opacity scale-95 active:transition-transform text-on-surface-variant dark:text-on-primary-fixed-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary dark:text-primary-fixed italic tracking-tight">EJAS26</h1>
+<button aria-label="Profile" class="hover:opacity-80 transition-opacity scale-95 active:transition-transform text-on-surface-variant dark:text-on-primary-fixed-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="px-container-margin py-section-padding space-y-stack-lg max-w-2xl mx-auto">
+<!-- Active Mission Card -->
+<article class="mission-card rounded-[2rem] p-6 relative overflow-hidden">
+<!-- Decorative Elements -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary opacity-10 rounded-bl-full blur-2xl"></div>
+<header class="mb-stack-md flex justify-between items-start relative z-10">
+<div>
+<span class="inline-block bg-primary-container text-inverse-primary font-label-sm text-label-sm uppercase px-3 py-1 rounded-full mb-2 tracking-wider">MISSÃO ATIVA</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-1">O Caminho da Fé</h2>
+<p class="font-body-sm text-on-surface-variant opacity-80 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+                        Vale Sagrado
+                    </p>
+</div>
+<div class="bg-surface-container-highest p-2 rounded-full shadow-inner">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</header>
+<figure class="mb-stack-md rounded-xl overflow-hidden relative shadow-lg">
+<img class="w-full h-48 object-cover opacity-90 transition-opacity hover:opacity-100" data-alt="A mystical, cinematic photograph of a misty valley pathway leading towards a glowing, ethereal structure in the distance. The scene is shrouded in deep shadows and fog, creating a moody, atmospheric dark mode aesthetic. Soft, warm light spills onto the rocky path, contrasting with the cool, deep charcoal and forest green tones of the surrounding landscape. The composition evokes a sense of sacred journey and spiritual discovery, perfect for a high-end mobile quest game." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7ayikRZdTlgjcqY1Adq_y8QdPS-itz27ahJbbmwHNZ_ro2MLZypVbU_PCwDGO3_x8NjTK743VrAEWXaWpVk6soKGV85Ba7fBVxWmMg4BDqXr4dFHf-9Vt6gQ9dzribpJ_qCA46XBywe-yNKpp8bZEFjb5AMKW2gVHs6Ngl-zJIipmBYZs1Vv2nb5HC6toNmI3_3_k9IlLmFJAsh6opsfCTnNuCT9bNMvyMSFFLIvtMpczOQURcFrPcA">
+<div class="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent opacity-60"></div>
+</figure>
+<div class="prose prose-invert max-w-none mb-stack-lg">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                    Siga as trilhas antigas que serpenteiam o vale. Diz-se que aqueles que escutam atentamente podem ouvir os ecos dos primeiros viajantes. Procure o marco de pedra com a inscrição esquecida e capture sua essência.
+                </p>
+</div>
+<!-- Audio Player Representation -->
+<div class="bg-surface-container-high rounded-2xl p-4 flex items-center justify-between shadow-inner mb-stack-lg">
+<div class="flex items-center gap-3">
+<button aria-label="Play audio log" class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-md hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Diário do Peregrino</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">0:45 / 2:30</p>
+</div>
+</div>
+<div class="audio-wave">
+<div class="wave-bar"></div>
+<div class="wave-bar"></div>
+<div class="wave-bar"></div>
+<div class="wave-bar"></div>
+<div class="wave-bar"></div>
+</div>
+</div>
+<button class="w-full bg-secondary hover:bg-secondary-container text-on-secondary hover:text-on-secondary-container font-label-md text-label-md py-4 px-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 uppercase tracking-wide">
+<span class="material-symbols-outlined">add_a_photo</span>
+                Upload Photo to Complete
+            </button>
+</article>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-primary/90 dark:bg-primary-container/95 backdrop-blur-md fixed bottom-6 left-0 right-0 mx-auto z-50 flex justify-around items-center px-6 py-3 max-w-md rounded-full w-[calc(100%-48px)] shadow-lg no-border">
+<button aria-label="Explore" class="hover:scale-110 transition-transform flex items-center justify-center text-white/70 dark:text-on-primary-container/60 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">explore</span>
+</button>
+<!-- Active Tab -->
+<button aria-label="Quest/Active Mission" class="hover:scale-110 transition-transform flex items-center justify-center bg-secondary dark:bg-secondary-container text-on-secondary dark:text-on-secondary-container rounded-full w-12 h-12 shadow-md scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">explore_nearby</span>
+</button>
+<button aria-label="Leaderboard" class="hover:scale-110 transition-transform flex items-center justify-center text-white/70 dark:text-on-primary-container/60 w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">leaderboard</span>
+</button>
+</nav>
+</body></html>
