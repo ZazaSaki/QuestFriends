@@ -7,11 +7,17 @@ import { formatDistance } from '../lib/geo';
  * Converted from baseline/stitch_quest_expedition_ui/mission_screen (+ _dark)
  * and mission_description_with_media_light.
  *
- * Renders whichever face of the quest the state machine is on:
+ * Renders whichever face of the quest the state machine is on. Every step waits
+ * for the player to tap through — nothing advances by itself:
  *   LOCKED     → hunting the waypoint (no content revealed — server-side rule)
- *   ACTIVE     → description blocks + the challenge (quiz here, camera elsewhere)
+ *   BRIEFING   → description blocks, then "Iniciar Desafio"
+ *   CHALLENGE  → the quiz form, or the camera CTA
  *   SUBMITTED  → media is with the staff, awaiting review
- *   REWARD     → postChallengeContent, then on to the next waypoint
+ *   REWARD     → postChallengeContent, then "Continuar" to the next waypoint
+ *
+ * The briefing/challenge split follows the mocks, which are two separate
+ * screens: mission_description_with_media_light ends on "INICIAR DESAFIO", and
+ * mission_quiz_challenge_scrollable is where the answering happens.
  */
 export default function MissionScreen({
   questState,
@@ -24,6 +30,8 @@ export default function MissionScreen({
   onOpenQuest,
   onOpenCamera,
   onSubmitQuiz,
+  onStartChallenge,
+  onBackToBriefing,
   onContinue,
   onOpenCompass,
   busy,
@@ -116,57 +124,90 @@ export default function MissionScreen({
       )}
 
       {/* ---------------------------------------------------------------- */}
-      {(questState === 'ACTIVE' || questState === 'SUBMITTED') && quest && (
-        <>
-          <div className="mb-stack-lg text-center">
-            <span className="inline-block px-3 py-1 bg-primary-container/10 dark:bg-white/10 text-primary-container dark:text-primary-fixed-dim font-label-sm text-label-sm uppercase rounded-full mb-stack-sm tracking-widest">
-              {quest.sequenceOrder ? `Missão ${String(quest.sequenceOrder).padStart(2, '0')}` : 'Missão Ativa'}
-            </span>
-            <h2 className="font-headline-xl text-headline-xl text-primary dark:text-primary-fixed mb-stack-sm">
-              {quest.title}
-            </h2>
-            <div className="h-1 w-16 bg-secondary mx-auto rounded-full" />
-          </div>
-
-          {/* Description blocks. dropLeadingImage strips the hero image at the
-              top of the content block — descriptions open on their text. */}
-          <article className="mission-card p-6 rounded-xl mb-stack-lg space-y-stack-md text-on-surface-variant dark:text-on-primary-container text-justify">
-            <InformationBlockRenderer content={quest.content} dropLeadingImage />
-          </article>
-
-          {questState === 'SUBMITTED' ? (
-            <div className="mission-card rounded-xl p-6 flex flex-col items-center gap-stack-md text-center">
-              <div className="w-2 h-2 rounded-full bg-[#d97736] pulse-dot" />
-              <h3 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed">
-                Enviado
-              </h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                A staff está a rever a vossa submissão. Fiquem por perto.
-              </p>
+      {(questState === 'BRIEFING' || questState === 'CHALLENGE' || questState === 'SUBMITTED') &&
+        quest && (
+          <>
+            <div className="mb-stack-lg text-center">
+              <span className="inline-block px-3 py-1 bg-primary-container/10 dark:bg-white/10 text-primary-container dark:text-primary-fixed-dim font-label-sm text-label-sm uppercase rounded-full mb-stack-sm tracking-widest">
+                {quest.sequenceOrder
+                  ? `Missão ${String(quest.sequenceOrder).padStart(2, '0')}`
+                  : 'Missão Ativa'}
+              </span>
+              <h2 className="font-headline-xl text-headline-xl text-primary dark:text-primary-fixed mb-stack-sm">
+                {quest.title}
+              </h2>
+              <div className="h-1 w-16 bg-secondary mx-auto rounded-full" />
             </div>
-          ) : quest.challengeType === 'QUIZ' ? (
-            <ChallengeBlocks quest={quest} onSubmit={onSubmitQuiz} busy={busy} error={error} />
-          ) : (
-            <div className="text-center mt-stack-lg">
-              {error && (
-                <p className="font-label-md text-label-md text-error dark:text-error-container mb-stack-md">
-                  {error}
-                </p>
-              )}
+
+            {/* Briefing: description blocks, and nothing happens until they tap.
+                dropLeadingImage strips the hero image at the top of the content
+                block — descriptions open on their text. */}
+            {questState === 'BRIEFING' && (
+              <>
+                <article className="mission-card p-6 rounded-xl mb-stack-lg space-y-stack-md text-on-surface-variant dark:text-on-primary-container text-justify">
+                  <InformationBlockRenderer content={quest.content} dropLeadingImage />
+                </article>
+
+                <div className="text-center mt-stack-lg">
+                  <button
+                    type="button"
+                    onClick={onStartChallenge}
+                    className="bg-[#d97736] text-on-secondary font-label-md text-label-md px-8 py-4 rounded-3xl shadow-ambient-lg hover:opacity-90 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
+                  >
+                    INICIAR DESAFIO
+                    <Icon name="arrow_forward" className="text-[18px]" />
+                  </button>
+                </div>
+              </>
+            )}
+
+            {questState === 'CHALLENGE' &&
+              (quest.challengeType === 'QUIZ' ? (
+                <ChallengeBlocks quest={quest} onSubmit={onSubmitQuiz} busy={busy} error={error} />
+              ) : (
+                <div className="text-center">
+                  {error && (
+                    <p className="font-label-md text-label-md text-error dark:text-error-container mb-stack-md">
+                      {error}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onOpenCamera}
+                    className="w-full bg-primary-container text-on-primary font-label-md text-label-md py-4 px-6 rounded-3xl shadow-ambient-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Icon name={quest.challengeType === 'VIDEO' ? 'videocam' : 'photo_camera'} />
+                    {quest.challengeType === 'VIDEO'
+                      ? 'Gravar Vídeo para Completar'
+                      : 'Enviar Foto para Completar'}
+                  </button>
+                </div>
+              ))}
+
+            {questState === 'CHALLENGE' && (
               <button
                 type="button"
-                onClick={onOpenCamera}
-                className="w-full bg-primary-container text-on-primary font-label-md text-label-md py-4 px-6 rounded-3xl shadow-ambient-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                onClick={onBackToBriefing}
+                className="mt-stack-md w-full text-on-surface-variant font-label-md text-label-md py-3 rounded-3xl hover:bg-primary/5 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
               >
-                <Icon name={quest.challengeType === 'VIDEO' ? 'videocam' : 'photo_camera'} />
-                {quest.challengeType === 'VIDEO'
-                  ? 'Gravar Vídeo para Completar'
-                  : 'Upload Photo to Complete'}
+                <Icon name="arrow_back" className="text-[18px]" />
+                Rever a descrição
               </button>
-            </div>
-          )}
-        </>
-      )}
+            )}
+
+            {questState === 'SUBMITTED' && (
+              <div className="mission-card rounded-xl p-6 flex flex-col items-center gap-stack-md text-center">
+                <div className="w-2 h-2 rounded-full bg-[#d97736] pulse-dot" />
+                <h3 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed">
+                  Enviado
+                </h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  A staff está a rever a vossa submissão. Fiquem por perto.
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
       {/* ---------------------------------------------------------------- */}
       {questState === 'REWARD' && (

@@ -93,12 +93,36 @@ src/
 ### State
 
 ```
-phase              JOIN → LOBBY → PLAYING → CONCLUSION
-currentQuestState  LOCKED → ACCESS → ACTIVE → SUBMITTED → REWARD → (LOCKED)
+phase              JOIN → LOBBY → INTRO → PLAYING → CONCLUSION
+currentQuestState  LOCKED → ACCESS → BRIEFING → CHALLENGE → SUBMITTED → REWARD → (LOCKED)
 ```
 
-`LOCKED` holds only the waypoint's coordinates — the backend deliberately withholds
-quest content until `unlock-quest`, so the description cannot be read ahead.
+Every stage ends on a button — the player decides when to move on, nothing
+auto-advances:
+
+| Screen | Proceeds with |
+|---|---|
+| Intro (`game.introduction`) | **COMEÇAR A JORNADA** |
+| Locked waypoint | **Abrir Missão** (enabled inside the radius) |
+| Briefing (quest description) | **INICIAR DESAFIO** |
+| Challenge (quiz / camera) | submit — or **Rever a descrição** to go back |
+| Reward (`postChallengeContent`) | **CONTINUAR** → next waypoint |
+
+The intro is shown once per room (recorded in `localStorage`), so a mid-game refresh
+does not replay it. `LOCKED` holds only the waypoint's coordinates — the backend
+deliberately withholds quest content until `unlock-quest`, so the description cannot
+be read ahead.
+
+### Empty tracks
+
+`POST /api/rooms` creates one team per **track**, and `join-player` round-robins
+players into them. A track authored without coordinates has no waypoints, so
+`next-coordinate` answers `{finished:true}` on the very first call. The app detects
+this (`finished` while `currentSeqNum <= 1` and score 0) and shows a "sem waypoints —
+talk to the host" screen with a re-check button, instead of a bogus victory.
+
+If players are landing there, the game has more tracks than it has coordinate sets:
+fill in a coordinate for every track in the quest builder, or reduce the track count.
 
 ### Content blocks
 

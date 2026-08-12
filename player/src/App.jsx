@@ -3,9 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Layout from './components/Layout';
 import MissionCamera from './components/MissionCamera';
 import WaitingRoom from './screens/WaitingRoom';
+import IntroScreen from './screens/IntroScreen';
 import MissionScreen from './screens/MissionScreen';
 import QuestAccess from './screens/QuestAccess';
 import GameConclusion from './screens/GameConclusion';
+import NoWaypoints from './screens/NoWaypoints';
 import CompassOverlay from './overlays/CompassOverlay';
 import LeaderboardOverlay from './overlays/LeaderboardOverlay';
 
@@ -19,8 +21,11 @@ import * as api from './lib/api';
  * The player app's single source of truth.
  *
  * Two state axes, matching the backend's own model:
- *   phase            JOIN → LOBBY → PLAYING → CONCLUSION
- *   currentQuestState  LOCKED → ACCESS → ACTIVE → SUBMITTED → REWARD → (LOCKED)
+ *   phase            JOIN → LOBBY → INTRO → PLAYING → CONCLUSION
+ *   currentQuestState  LOCKED → ACCESS → BRIEFING → CHALLENGE → SUBMITTED → REWARD → (LOCKED)
+ *
+ * Every transition is player-driven: the intro, the briefing and the reward each
+ * end on a button, so nobody is dragged through the story faster than they read.
  *
  * Everything that talks to the backend lives here; the screens below are
  * presentational and driven by props, so a screen can be exercised on its own.
@@ -35,6 +40,26 @@ function roomIdFromUrl() {
     return new URLSearchParams(window.location.search).get('room')?.trim() ?? '';
   } catch {
     return '';
+  }
+}
+
+// The game intro is a once-per-room screen: a refresh mid-quest should not
+// replay it, so the fact that it was dismissed lives on the device.
+const introKey = (roomId) => `scavenger_intro_seen_${roomId}`;
+
+function introSeen(roomId) {
+  try {
+    return localStorage.getItem(introKey(roomId)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markIntroSeen(roomId) {
+  try {
+    localStorage.setItem(introKey(roomId), '1');
+  } catch {
+    /* private mode — the intro may show again, which is harmless */
   }
 }
 
@@ -61,6 +86,7 @@ export default function App() {
   const [boardLoading, setBoardLoading] = useState(false);
   const [finalScore, setFinalScore] = useState(null);
   const [conclusion, setConclusion] = useState(null);
+  const [introduction, setIntroduction] = useState(null);
 
   const socketRef = useRef(null);
   // Socket handlers are registered once but need the live session/quest, so
@@ -76,21 +102,36 @@ export default function App() {
     setQuest(q);
     setReward(null);
     setError(null);
-    setCurrentQuestState('ACTIVE');
+    // Land on the briefing: read the description first, then tap into the
+    // challenge. A teammate unlocking the quest must not yank anyone straight
+    // into a quiz form.
+    setCurrentQuestState('BRIEFING');
     setCameraOpen(false);
     setTab('mission');
   }, []);
 
-  const showConclusion = useCallback(async (sess) => {
-    setPhase('CONCLUSION');
+  const showConclusion = useCallback(async (sess, { checkEmptyTrack = true } = {}) => {
     setQuest(null);
     setTarget(null);
+
+    let team = null;
     try {
       const state = await api.getCurrentState(sess.userId);
-      setFinalScore(state?.team?.totalScore ?? null);
+      team = state?.team ?? null;
+      setFinalScore(team?.totalScore ?? null);
     } catch {
       /* score is a nicety — the conclusion still renders without it */
     }
+
+    // `finished` before the team has advanced past the first waypoint means the
+    // track has no waypoints at all (a track authored without coordinates), not
+    // a completed run. Saying "you won" there would be a lie.
+    if (checkEmptyTrack && team && team.currentSeqNum <= 1 && (team.totalScore ?? 0) === 0) {
+      setPhase('NO_WAYPOINTS');
+      return;
+    }
+
+    setPhase('CONCLUSION');
     try {
       const room = await api.getRoom(sess.roomId);
       if (room?.gameId) {
@@ -125,7 +166,6 @@ export default function App() {
 
   const startGame = useCallback(
     async (sess) => {
-      setPhase('PLAYING');
       // Recovery after a refresh: if the team already has a quest open, re-ask
       // for it (unlock-quest is idempotent) instead of restarting the waypoint.
       try {
@@ -133,17 +173,40 @@ export default function App() {
         if (state?.activeQuestId) {
           const q = await api.unlockQuest(sess.teamId);
           if (!q?.finished) {
+            setPhase('PLAYING');
             renderActiveQuest(q);
+            return;
+          }
+        }
+
+        // Fresh start (nothing completed yet) → show the game's introduction and
+        // let the player tap through. Recorded per room so a mid-game refresh
+        // does not replay it.
+        const atStart = (state?.team?.currentSeqNum ?? 1) <= 1;
+        if (atStart && !introSeen(sess.roomId)) {
+          const room = await api.getRoom(sess.roomId);
+          const game = room?.gameId ? await api.getGame(room.gameId) : null;
+          if (game?.introduction) {
+            setIntroduction(game.introduction);
+            setPhase('INTRO');
             return;
           }
         }
       } catch {
         /* fall through to the normal waypoint flow */
       }
+      setPhase('PLAYING');
       await loadNextCoordinate(sess);
     },
     [loadNextCoordinate, renderActiveQuest]
   );
+
+  const beginFromIntro = useCallback(() => {
+    if (!session) return;
+    markIntroSeen(session.roomId);
+    setPhase('PLAYING');
+    loadNextCoordinate(session);
+  }, [session, loadNextCoordinate]);
 
   const handleValidation = useCallback(
     (p) => {
@@ -159,9 +222,10 @@ export default function App() {
         setCurrentQuestState('REWARD');
         setTab('mission');
       } else {
-        // The quest stays active server-side, so drop back to it for a retry.
+        // The quest stays active server-side, so drop back to the challenge for
+        // a retry rather than making them re-read the whole briefing.
         setError(p.message || 'A staff pediu para tentarem outra vez.');
-        setCurrentQuestState(questRef.current ? 'ACTIVE' : 'LOCKED');
+        setCurrentQuestState(questRef.current ? 'CHALLENGE' : 'LOCKED');
       }
     },
     []
@@ -212,7 +276,10 @@ export default function App() {
         const room = await api.getRoom(session.roomId);
         if (cancelled) return;
         if (room?.status === 'PLAYING') await startGame(session);
-        else if (room?.status === 'FINISHED') await showConclusion(session);
+        // A room the host already ended is over regardless of how far the team
+        // got — that is not the empty-track case.
+        else if (room?.status === 'FINISHED')
+          await showConclusion(session, { checkEmptyTrack: false });
         else setPhase('LOBBY');
       } catch (err) {
         if (cancelled) return;
@@ -399,6 +466,15 @@ export default function App() {
     if (session) loadNextCoordinate(session);
   }, [session, loadNextCoordinate]);
 
+  // Re-check for waypoints after the host fixes an empty track.
+  const recheckWaypoints = useCallback(async () => {
+    if (!session) return;
+    setBusy(true);
+    setPhase('PLAYING');
+    await loadNextCoordinate(session);
+    setBusy(false);
+  }, [session, loadNextCoordinate]);
+
   // Standings are polled on demand — one fetch each time the board is opened.
   useEffect(() => {
     if (tab !== 'leaderboard' || !session) return;
@@ -423,7 +499,7 @@ export default function App() {
 
   // ------------------------------------------------------------------ render
 
-  const showNav = phase === 'PLAYING' || phase === 'CONCLUSION';
+  const showNav = phase === 'PLAYING' || phase === 'CONCLUSION' || phase === 'NO_WAYPOINTS';
 
   return (
     <Layout
@@ -446,6 +522,14 @@ export default function App() {
         />
       )}
 
+      {phase === 'INTRO' && (
+        <IntroScreen
+          introduction={introduction}
+          teamName={session?.teamName}
+          onBegin={beginFromIntro}
+        />
+      )}
+
       {phase === 'PLAYING' && (
         <MissionScreen
           questState={currentQuestState}
@@ -458,12 +542,24 @@ export default function App() {
           onOpenQuest={openQuest}
           onOpenCamera={() => setCameraOpen(true)}
           onSubmitQuiz={submitQuiz}
+          onStartChallenge={() => {
+            setError(null);
+            setCurrentQuestState('CHALLENGE');
+          }}
+          onBackToBriefing={() => {
+            setError(null);
+            setCurrentQuestState('BRIEFING');
+          }}
           onContinue={continueToNext}
           onOpenCompass={() => setTab('compass')}
           busy={busy}
           error={error}
           notice={notice}
         />
+      )}
+
+      {phase === 'NO_WAYPOINTS' && (
+        <NoWaypoints teamName={session?.teamName} onRetry={recheckWaypoints} busy={busy} />
       )}
 
       {phase === 'CONCLUSION' && (
