@@ -68,19 +68,20 @@ services:
       backend_net:
         ipv4_address: 10.5.0.15
 
-  # frontend:
-  #   build: ./frontend
-  #   restart: always
-  #   ports:
-  #     - "9112:80" # Player / manager / staff UI (open http://localhost:9112)
-  #   volumes:
-  #     # Static files — edit under ./frontend and just refresh, no rebuild.
-  #     - ./frontend:/usr/share/nginx/html:ro
-  #   depends_on:
-  #     - app
-  #   networks:
-  #     backend_net:
-  #       ipv4_address: 10.5.0.20
+  staff:
+    build: ./staffFrontend
+    restart: always
+    ports:
+      - "9105:3000"
+    environment:
+      PORT: 3000
+      # URL q\ue o BROWSER do utilizador vai usar para falar com o backend —
+      # localhost para testes locais, ou o IP/domínio público em produção.
+      PUBLIC_BACKEND_URL: ${PUBLIC_BACKEND_URL}
+    depends_on:
+      - app
+    networks:
+      - backend_net
 
   player:
     build:
@@ -93,8 +94,8 @@ services:
         # backend & MinIO. Works locally, on a LAN IP (phones), and behind a
         # single Cloudflare tunnel — no CORS, no mixed content.
         # Set to an absolute URL only if the backend is on another origin.
-        VITE_API_URL: ""
-        VITE_SOCKET_URL: ""
+        VITE_API_URL: ${PUBLIC_BACKEND_URL}
+        VITE_SOCKET_URL: ${PUBLIC_BACKEND_URL}
     restart: always
     ports:
       - "9103:80" # Player UI (open http://localhost:9103 on the phone)
