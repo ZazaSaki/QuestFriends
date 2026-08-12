@@ -1,15 +1,23 @@
 import prisma from "../prisma.js";
 import { roomChannel } from "../sockets/index.js";
 
+/** Upper bound on teams per room — a sanity guard, not a game-design limit. */
+const MAX_TEAMS = 100;
+
 /**
  * POST /api/rooms
- * Body: { gameId, staffPassword? }
- * Opens a room and auto-generates one Team per Track in the game,
- * each team linked to its track.
+ * Body: { gameId, staffPassword?, teamCount? }
+ *
+ * Opens a room and auto-generates `teamCount` teams, assigning tracks
+ * round-robin: team i plays tracks[i % tracks.length]. So when there are more
+ * teams than tracks, several teams share a track (they run the same route);
+ * when there are fewer, the surplus tracks simply go unused.
+ *
+ * `teamCount` defaults to one team per track, which is the historical behaviour.
  */
 export async function createRoom(req, res, next) {
   try {
-    const { gameId, staffPassword } = req.body;
+    const { gameId, staffPassword, teamCount } = req.body;
     if (!gameId) return res.status(400).json({ error: "gameId is required" });
 
     const tracks = await prisma.track.findMany({ where: { gameId } });
@@ -19,16 +27,32 @@ export async function createRoom(req, res, next) {
         .json({ error: "Game has no tracks; create tracks before opening a room" });
     }
 
+    let count = tracks.length;
+    if (teamCount !== undefined && teamCount !== null && teamCount !== "") {
+      count = Number(teamCount);
+      if (!Number.isInteger(count) || count < 1 || count > MAX_TEAMS) {
+        return res
+          .status(400)
+          .json({ error: `teamCount must be a whole number between 1 and ${MAX_TEAMS}` });
+      }
+    }
+
+    // Teams sharing a track get a numbered suffix so names stay unique. The
+    // first pass keeps the bare track name, matching pre-teamCount rooms.
+    const teams = Array.from({ length: count }, (_, i) => {
+      const track = tracks[i % tracks.length];
+      const pass = Math.floor(i / tracks.length);
+      return {
+        trackId: track.id,
+        name: pass === 0 ? track.name : `${track.name} (${pass + 1})`,
+      };
+    });
+
     const room = await prisma.room.create({
       data: {
         gameId,
         staffPassword: staffPassword ?? null,
-        teams: {
-          create: tracks.map((track) => ({
-            trackId: track.id,
-            name: track.name,
-          })),
-        },
+        teams: { create: teams },
       },
       include: { teams: true },
     });
@@ -179,6 +203,38 @@ export async function startRoom(req, res, next) {
     const io = req.app.get("io");
     io.to(roomChannel(roomId)).emit("game_started", {
       roomId,
+      status: updated.status,
+      at: Date.now(),
+    });
+
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/rooms/:roomId/end
+ * Closes the room for good: status → FINISHED and every connected client is
+ * told the host ended it. `reason: "ended"` matches what the player app
+ * already distinguishes from a janitor-driven close.
+ */
+export async function endRoom(req, res, next) {
+  try {
+    const { roomId } = req.params;
+
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    const updated = await prisma.room.update({
+      where: { id: roomId },
+      data: { status: "FINISHED" },
+    });
+
+    const io = req.app.get("io");
+    io.to(roomChannel(roomId)).emit("room_closed", {
+      roomId,
+      reason: "ended",
       status: updated.status,
       at: Date.now(),
     });

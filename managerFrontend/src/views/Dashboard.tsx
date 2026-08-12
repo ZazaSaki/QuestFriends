@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState('');
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
   const [staffPassword, setStaffPassword] = useState('');
+  const [teamCount, setTeamCount] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -50,7 +51,9 @@ export default function Dashboard() {
     setCreating(true);
     setCreateError(null);
     try {
-      const room = await createRoom(selectedGame, staffPassword || undefined);
+      // Blank = let the backend default to one team per track.
+      const count = teamCount.trim() === '' ? undefined : Number(teamCount);
+      const room = await createRoom(selectedGame, staffPassword || undefined, count);
       setIsCreateRoomModalOpen(false);
       setStaffPassword('');
       navigate(`/monitor/${room.id}`);
@@ -62,6 +65,18 @@ export default function Dashboard() {
   };
 
   const filteredGames = games.filter((g) => g.title.toLowerCase().includes(query.trim().toLowerCase()));
+
+  // Create-room modal: explain how the requested team count maps onto tracks.
+  const createTrackCount = games.find((g) => g.id === selectedGame)?.trackCount ?? 0;
+  const wantedTeams = teamCount.trim() === '' ? createTrackCount : Number(teamCount);
+  const teamsPerTrackHint =
+    !createTrackCount || !Number.isInteger(wantedTeams) || wantedTeams < 1
+      ? 'each team is assigned one of them.'
+      : wantedTeams > createTrackCount
+        ? `some tracks will be shared by up to ${Math.ceil(wantedTeams / createTrackCount)} teams.`
+        : wantedTeams < createTrackCount
+          ? `${createTrackCount - wantedTeams} track${createTrackCount - wantedTeams === 1 ? '' : 's'} will go unused.`
+          : 'each team gets its own track.';
 
   return (
     <div className="flex h-full relative">
@@ -148,7 +163,11 @@ export default function Dashboard() {
             Rooms {selectedGame && `(${rooms.length})`}
           </h2>
           <button
-            onClick={() => { setCreateError(null); setIsCreateRoomModalOpen(true); }}
+            onClick={() => {
+              setCreateError(null);
+              setTeamCount(String(games.find((g) => g.id === selectedGame)?.trackCount ?? 1));
+              setIsCreateRoomModalOpen(true);
+            }}
             disabled={!selectedGame}
             className="p-2 text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -201,9 +220,22 @@ export default function Dashboard() {
               <button onClick={() => setIsCreateRoomModalOpen(false)} className="text-neutral-500 hover:text-neutral-700 text-xl leading-none">&times;</button>
             </div>
             <div className="p-4 space-y-4">
-              <p className="text-sm text-neutral-600">
-                A team is created automatically for each <b>track</b> in this game. Add tracks in the Quest Builder to change team count.
-              </p>
+              <div>
+                <label className="text-sm font-medium text-neutral-700 mb-1 block">Number of Teams</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={teamCount}
+                  onChange={(e) => setTeamCount(e.target.value)}
+                  placeholder={String(createTrackCount)}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+                />
+                <p className="text-xs text-neutral-500 mt-1.5">
+                  This game has <b>{createTrackCount}</b> track{createTrackCount === 1 ? '' : 's'}. Teams are
+                  spread across them in order, so {teamsPerTrackHint}
+                </p>
+              </div>
               <div>
                 <label className="text-sm font-medium text-neutral-700 mb-1 block">Staff Password (optional)</label>
                 <input

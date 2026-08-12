@@ -11,6 +11,13 @@ ARG VITE_SOCKET_URL=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 
+# Public origin of the PLAYER app, used to build the room join link / QR code
+# shown in the Live Monitor. Unlike the two above this cannot be same-origin:
+# the manager and the player are different hosts. Empty = the room QR falls
+# back to encoding the bare room UUID (still scannable inside the player app).
+ARG VITE_PLAYER_URL=
+ENV VITE_PLAYER_URL=$VITE_PLAYER_URL
+
 COPY package*.json ./
 # React 19 peer ranges across the UI libs need legacy peer resolution.
 RUN npm install --legacy-peer-deps

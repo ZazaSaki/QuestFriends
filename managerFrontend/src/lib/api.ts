@@ -173,8 +173,9 @@ export const listRooms = (gameId?: string) =>
 
 export const getRoom = (roomId: string) => request<RoomDetail>('GET', `/api/rooms/${roomId}`);
 
-export const createRoom = (gameId: string, staffPassword?: string) =>
-  request<RoomDetail>('POST', '/api/rooms', { gameId, staffPassword });
+/** `teamCount` omitted = one team per track (tracks are shared round-robin above that). */
+export const createRoom = (gameId: string, staffPassword?: string, teamCount?: number) =>
+  request<RoomDetail>('POST', '/api/rooms', { gameId, staffPassword, teamCount });
 
 export const startRoom = (roomId: string) =>
   request<{ id: string; status: string }>('POST', `/api/rooms/${roomId}/start`);

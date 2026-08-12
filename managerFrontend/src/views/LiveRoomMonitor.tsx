@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Popup, CircleMarker, useMap } from 'react-leaflet';
-import { Copy, Users, ChevronDown, ChevronRight, Activity, Trophy } from 'lucide-react';
+import { Copy, Users, ChevronDown, ChevronRight, Activity, Trophy, Download } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../components/Layout';
 import { getRoom, startRoom, endRoom, swapMember, type RoomDetail } from '../lib/api';
 import { connectStaff } from '../lib/socket';
+import { playerJoinUrl, hasPlayerUrl } from '../lib/joinLink';
+import { qrPngBlob, downloadBlob } from '../lib/qrExport';
 
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 const DEFAULT_CENTER: [number, number] = [40.4168, -3.7038];
@@ -104,6 +107,19 @@ export default function LiveRoomMonitor() {
     }
   };
 
+  // Join link encoded in the room QR. Falls back to the bare room id when
+  // VITE_PLAYER_URL is unset — the player app's scanner accepts either form.
+  const joinUrl = roomId ? playerJoinUrl(roomId) : '';
+
+  const downloadRoomQr = useCallback(async () => {
+    if (!roomId) return;
+    try {
+      downloadBlob(await qrPngBlob(playerJoinUrl(roomId)), `room_${roomId.slice(0, 8)}_qrCode.png`);
+    } catch (e) {
+      setError('QR download failed: ' + (e as Error).message);
+    }
+  }, [roomId]);
+
   return (
     <div className="flex h-full w-full bg-neutral-100 overflow-hidden relative">
       {closedReason && (
@@ -131,6 +147,21 @@ export default function LiveRoomMonitor() {
               <div>
                 <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 block">Room ID</label>
                 <div className="font-mono text-sm font-bold text-neutral-900 bg-neutral-100 px-3 py-2 rounded-md border border-neutral-200 break-all">{roomId}</div>
+                {roomId && (
+                  <div className="mt-3 flex flex-col items-center gap-2 bg-white border border-neutral-200 rounded-md p-3">
+                    <QRCodeSVG value={joinUrl} size={200} />
+                    <p className="text-xs text-neutral-500">
+                      {hasPlayerUrl() ? 'Scan to join this room' : 'Scan with the player app to join'}
+                    </p>
+                    <button
+                      onClick={downloadRoomQr}
+                      className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-md transition-colors"
+                      title="Download this QR code as a PNG"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download PNG
+                    </button>
+                  </div>
+                )}
               </div>
               {error && <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
               <div className="space-y-4 pt-1">
@@ -144,8 +175,8 @@ export default function LiveRoomMonitor() {
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wider block border-b pb-2">Invite Link</label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-neutral-100 border border-neutral-200 rounded-md px-3 py-2 text-xs text-neutral-600 font-mono truncate">play.game/{roomId?.slice(0, 8)}</div>
-                  <button onClick={() => roomId && navigator.clipboard?.writeText(roomId)} className="p-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors shrink-0" title="Copy room ID"><Copy className="w-4 h-4" /></button>
+                  <div className="flex-1 bg-neutral-100 border border-neutral-200 rounded-md px-3 py-2 text-xs text-neutral-600 font-mono truncate" title={joinUrl}>{joinUrl}</div>
+                  <button onClick={() => joinUrl && navigator.clipboard?.writeText(joinUrl)} className="p-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors shrink-0" title={hasPlayerUrl() ? 'Copy join link' : 'Copy room ID'}><Copy className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>

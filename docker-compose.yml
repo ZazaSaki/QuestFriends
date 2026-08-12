@@ -112,6 +112,10 @@ services:
         # locally and behind a single Cloudflare tunnel (no CORS/mixed-content).
         VITE_API_URL: ""
         VITE_SOCKET_URL: ""
+        # Public origin of the PLAYER app (a different host from the manager),
+        # used for the room join link + QR code in the Live Monitor. Empty
+        # falls back to encoding the bare room UUID.
+        VITE_PLAYER_URL: ${PLAYER_URL:-}
     restart: always
     ports:
       # Loopback only — this is the single origin the Cloudflare tunnel points at.

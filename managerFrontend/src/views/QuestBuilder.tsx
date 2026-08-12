@@ -17,15 +17,17 @@ import {
   NodeProps,
   OnSelectionChangeParams
 } from '@xyflow/react';
-import { Trash2, Settings, Plus, MapPin, ChevronDown, ChevronRight, GripVertical, Image as ImageIcon, Video, Music, Type, Save, Download, Upload, AlertTriangle } from 'lucide-react';
+import { Trash2, Settings, Plus, MapPin, ChevronDown, ChevronRight, GripVertical, Image as ImageIcon, Video, Music, Type, Save, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../components/Layout';
 import { MapContainer, TileLayer, CircleMarker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getGame, createUser, createGame, createQuest, createTrack, appendWaypoints, updateGame, deleteGame } from '../lib/api';
-import { gameToGraph, graphToPayload, builderToJSON, jsonToBuilder } from '../lib/questMapping';
+import { gameToGraph, graphToPayload, builderToJSON, jsonToBuilder, findMissingLocations } from '../lib/questMapping';
 import { uploadMedia } from '../lib/upload';
+import { qrPngBlob, downloadBlob, slug } from '../lib/qrExport';
+import { buildQrPack } from '../lib/qrPack';
 
 type ContentType = 'Text' | 'Image' | 'Video' | 'Audio';
 
@@ -443,6 +445,15 @@ const NodeEditor = ({
                     <div className="flex flex-col items-center justify-center p-4 bg-neutral-50 border border-neutral-200 rounded-md">
                       <p className="text-xs text-neutral-500 mb-3 font-medium uppercase">QR Code Preview</p>
                       <QRCodeSVG value={challengeCode} size={128} />
+                      <button
+                        onClick={async () => {
+                          downloadBlob(await qrPngBlob(challengeCode), `${slug(String(d.label ?? 'quest'))}_qrCode.png`);
+                        }}
+                        className="mt-3 flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-md transition-colors"
+                        title="Download this QR code as a PNG"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download PNG
+                      </button>
                     </div>
                   )}
                 </div>
@@ -833,6 +844,7 @@ export default function QuestBuilder() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [packing, setPacking] = useState(false);
 
   const flash = (kind: 'ok' | 'err', msg: string) => {
     setStatus({ kind, msg });
@@ -848,6 +860,14 @@ export default function QuestBuilder() {
     });
     if (hasBlob) {
       flash('err', 'Some media is still uploading (or failed). Re-add it, then Save.');
+      return;
+    }
+    // Every quest needs a coordinate on every track — a blank one would be
+    // dropped from the payload, leaving that track missing a stop.
+    const missing = findMissingLocations(totalTracks, nodes);
+    if (missing.length) {
+      const shown = missing.slice(0, 3).join(', ');
+      flash('err', `Missing location: ${shown}${missing.length > 3 ? ` (+${missing.length - 3} more)` : ''}`);
       return;
     }
     setSaving(true);
@@ -898,13 +918,31 @@ export default function QuestBuilder() {
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([builderToJSON({ gameName, totalTracks, nodes, edges })], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(gameName || 'game').replace(/[^a-z0-9-_]+/gi, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${slug(gameName || 'game')}.json`);
   }, [gameName, totalTracks, nodes, edges]);
+
+  // Zip of every quest QR code + every quest image, named by quest position.
+  const handleDownloadQrPack = useCallback(async () => {
+    setPacking(true);
+    try {
+      const pack = await buildQrPack(gameName, nodes);
+      if (!pack.qrCount && !pack.imageCount) {
+        flash('err', 'Nothing to export: no QR codes or images in this game.');
+        return;
+      }
+      downloadBlob(pack.blob, pack.filename);
+      const summary = `${pack.qrCount} QR code(s), ${pack.imageCount} image(s)`;
+      if (pack.failed.length) {
+        flash('err', `Exported ${summary} — ${pack.failed.length} image(s) failed, see manifest.txt`);
+      } else {
+        flash('ok', `Exported ${summary}.`);
+      }
+    } catch (e) {
+      flash('err', 'QR pack failed: ' + (e as Error).message);
+    } finally {
+      setPacking(false);
+    }
+  }, [gameName, nodes]);
 
   const handleUploadFile = useCallback(async (file: File) => {
     try {
@@ -1045,6 +1083,9 @@ export default function QuestBuilder() {
           </button>
           <button onClick={handleDownload} className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-md shadow-sm hover:bg-neutral-50 hover:text-indigo-600 transition-colors" title="Download JSON">
             <Download className="w-4 h-4" />
+          </button>
+          <button onClick={handleDownloadQrPack} disabled={packing} className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-md shadow-sm hover:bg-neutral-50 hover:text-indigo-600 transition-colors disabled:opacity-50" title="Download QR pack (all QR codes + quest images as a zip)">
+            <QrCode className="w-4 h-4" />
           </button>
           <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-md shadow-sm hover:bg-neutral-50 hover:text-indigo-600 transition-colors" title="Upload JSON">
             <Upload className="w-4 h-4" />

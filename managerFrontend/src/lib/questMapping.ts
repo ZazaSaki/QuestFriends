@@ -101,7 +101,7 @@ export function gameToGraph(game: GameDetail): { nodes: Node[]; edges: Edge[] } 
 
 // ---------- Save: graph → backend payload ----------
 
-function parseCoord(s: string | undefined): [number, number] | null {
+export function parseCoord(s: string | undefined): [number, number] | null {
   if (!s) return null;
   const m = s.split(',').map((x) => parseFloat(x.trim()));
   if (m.length === 2 && Number.isFinite(m[0]) && Number.isFinite(m[1])) return [m[0], m[1]];
@@ -117,6 +117,30 @@ export interface SavePayload {
   conclusion: unknown;
   quests: Omit<NewQuest, 'gameId'>[];
   tracks: TrackPayload[];
+}
+
+/**
+ * Quest/track pairs left without a coordinate, e.g. ["Old Bridge → Track 2"].
+ * Every quest needs a location on every track: a blank one would be silently
+ * dropped from the payload, leaving that track short a stop.
+ */
+export function findMissingLocations(totalTracks: number, nodes: Node[]): string[] {
+  const sorted = [...nodes].sort((a, b) => a.position.y - b.position.y);
+  const roleOf = (n: Node) => (n.data as any).role as Role | undefined;
+  const intro = sorted.find((n) => roleOf(n) === 'intro') ?? sorted[0];
+  const conclusion = sorted.find((n) => roleOf(n) === 'conclusion') ?? sorted[sorted.length - 1];
+  const questNodes = sorted.filter((n) => n !== intro && n !== conclusion && (roleOf(n) ?? 'quest') === 'quest');
+
+  const missing: string[] = [];
+  questNodes.forEach((n) => {
+    const d = n.data as any;
+    for (let t = 0; t < totalTracks; t++) {
+      if (!parseCoord(d.nodeTracks?.[t]?.coordinate)) {
+        missing.push(`${d.label || 'Untitled Quest'} → ${d.nodeTracks?.[t]?.name || `Track ${t + 1}`}`);
+      }
+    }
+  });
+  return missing;
 }
 
 export function graphToPayload(totalTracks: number, nodes: Node[]): SavePayload {
