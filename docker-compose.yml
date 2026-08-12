@@ -18,7 +18,9 @@ services:
     build: ./scavenger
     restart: always
     ports:
-      - "9101:3000"
+      # Loopback-only: cloudflared runs on the host and the manager's nginx
+      # reaches the backend in-network. Nothing here needs a LAN-facing bind.
+      - "127.0.0.1:9101:3000"
     environment:
       # Postgres Variables
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@10.5.0.5:5432/${POSTGRES_DB}?schema=public
@@ -54,8 +56,8 @@ services:
     image: minio/minio:latest
     restart: always
     ports:
-      - "9110:9000" # MinIO API Port (used by your Node app)
-      - "9111:9001" # MinIO Web Console (for you to view files in your browser)
+      - "127.0.0.1:9110:9000" # MinIO API Port (used by your Node app)
+      - "127.0.0.1:9111:9001" # MinIO Web Console — loopback only, never tunnel it
     environment:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
@@ -112,7 +114,8 @@ services:
         VITE_SOCKET_URL: ""
     restart: always
     ports:
-      - "9113:80" # Manager UI (open http://localhost:9113)
+      # Loopback only — this is the single origin the Cloudflare tunnel points at.
+      - "127.0.0.1:9113:80" # Manager UI (open http://localhost:9113)
     depends_on:
       - app
     networks:
