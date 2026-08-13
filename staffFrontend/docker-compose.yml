@@ -21,9 +21,9 @@ services:
       - "9105:3000"
     environment:
       PORT: 3000
-      # URL que o BROWSER do utilizador vai usar para falar com o backend —
+      # URL q\ue o BROWSER do utilizador vai usar para falar com o backend —
       # localhost para testes locais, ou o IP/domínio público em produção.
-      PUBLIC_BACKEND_URL: http://localhost:9101
+      PUBLIC_BACKEND_URL: ${PUBLIC_BACKEND_URL}
     depends_on:
       - app
     networks:
