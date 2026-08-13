@@ -72,7 +72,7 @@ services:
     build: ./staffFrontend
     restart: always
     ports:
-      - "9105:3000"
+      - "9112:3000"
     environment:
       PORT: 3000
       # URL q\ue o BROWSER do utilizador vai usar para falar com o backend —
