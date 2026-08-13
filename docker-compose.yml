@@ -68,19 +68,30 @@ services:
       backend_net:
         ipv4_address: 10.5.0.15
 
-  # frontend:
-  #   build: ./frontend
-  #   restart: always
-  #   ports:
-  #     - "9112:80" # Player / manager / staff UI (open http://localhost:9112)
-  #   volumes:
-  #     # Static files — edit under ./frontend and just refresh, no rebuild.
-  #     - ./frontend:/usr/share/nginx/html:ro
-  #   depends_on:
-  #     - app
-  #   networks:
-  #     backend_net:
-  #       ipv4_address: 10.5.0.20
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      # server.js is Express on :3000 (see frontend/Dockerfile), not nginx on :80.
+      - "127.0.0.1:9112:3000" # Player / staff UI (open http://localhost:9112)
+    volumes:
+      # Static assets — edit under ./frontend and just refresh, no rebuild.
+      # Only css/ and js/ are mounted: binding all of /app would shadow the
+      # node_modules installed at image build time.
+      - ./frontend/css:/app/css:ro
+      - ./frontend/js:/app/js:ro
+    environment:
+      PORT: 3000
+      # Injected into the page as window.__DEFAULT_API_BASE__ (see
+      # frontend/server.js). Must be an address the PLAYER'S browser can reach,
+      # not a Docker/loopback address. Cross-origin is fine: the backend sets
+      # `cors()` open and Socket.io `origin: "*"`.
+      PUBLIC_BACKEND_URL: ${PUBLIC_API_URL}
+    depends_on:
+      - app
+    networks:
+      backend_net:
+        ipv4_address: 10.5.0.20
 
   manager:
     build:
@@ -100,25 +111,25 @@ services:
     networks:
       - backend_net
 
-  tester:
-    build: ./tester
-    restart: "no"
-    ports:
-      # Loopback only — god-mode QA dashboard, no auth. Never tunnel it.
-      - "127.0.0.1:9121:3000" # Manual QA dashboard (open http://localhost:9121)
-    environment:
-      PORT: 3000
-      # In-Docker-network address the test-runner uses to reach the backend.
-      BACKEND_HTTP: http://10.5.0.10:3000
-      # Host-mapped URL the browser-based dashboard should use for the backend.
-      PUBLIC_BACKEND_URL: ${BACKEND_URL}
-    volumes:
-      # Drop test media into ./tester/assets and it is served live (no rebuild).
-      - ./tester/assets:/app/assets
-    depends_on:
-      - app
-    networks:
-      - backend_net
+  # tester:
+  #   build: ./tester
+  #   restart: "no"
+  #   ports:
+  #     # Loopback only — god-mode QA dashboard, no auth. Never tunnel it.
+  #     - "127.0.0.1:9121:3000" # Manual QA dashboard (open http://localhost:9121)
+  #   environment:
+  #     PORT: 3000
+  #     # In-Docker-network address the test-runner uses to reach the backend.
+  #     BACKEND_HTTP: http://10.5.0.10:3000
+  #     # Host-mapped URL the browser-based dashboard should use for the backend.
+  #     PUBLIC_BACKEND_URL: ${BACKEND_URL}
+  #   volumes:
+  #     # Drop test media into ./tester/assets and it is served live (no rebuild).
+  #     - ./tester/assets:/app/assets
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - backend_net
 
 volumes:
   pgdata:
