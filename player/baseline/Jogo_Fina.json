@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "gameName": "Jogo Fina",
+  "totalTracks": 1,
+  "nodes": [
+    {
+      "id": "intro",
+      "type": "quest",
+      "position": {
+        "x": 250,
+        "y": 50
+      },
+      "data": {
+        "role": "intro",
+        "label": "Introduction",
+        "descriptionBlocks": [
+          {
+            "id": "mc3yx8j",
+            "type": "Text",
+            "content": "hi"
+          },
+          {
+            "id": "p7hgyzd",
+            "type": "Image",
+            "content": "http://localhost:9110/scavenger/9263d7fd-86f0-4001-b29d-e0417ae49a09.png"
+          },
+          {
+            "id": "j1k37pz",
+            "type": "Text",
+            "content": "what do you think of this image"
+          }
+        ],
+        "points": 100,
+        "rewardBlocks": [],
+        "challengeMode": "None",
+        "challengeCode": "",
+        "confirmationMode": "Quiz",
+        "quizQuestions": [
+          {
+            "id": "1",
+            "question": "",
+            "options": [
+              "",
+              ""
+            ],
+            "correctOptionIndex": 0
+          }
+        ],
+        "nodeTracks": [
+          {
+            "id": "1",
+            "name": "Track 1",
+            "coordinate": ""
+          }
+        ]
+      },
+      "measured": {
+        "width": 150,
+        "height": 84
+      },
+      "selected": false
+    },
+    {
+      "id": "b281308b-1c11-4f88-b32d-afc4a6d11444",
+      "type": "quest",
+      "position": {
+        "x": 250,
+        "y": 180
+      },
+      "data": {
+        "role": "quest",
+        "label": "Quest 1",
+        "points": 10,
+        "challengeMode": "None",
+        "challengeCode": "",
+        "confirmationMode": "Image Upload",
+        "descriptionBlocks": [
+          {
+            "id": "q9wi8e7",
+            "type": "Text",
+            "content": "do you like mi office?"
+          },
+          {
+            "id": "irtexwouc",
+            "type": "Image",
+            "content": "http://localhost:9110/scavenger/3373a774-3400-4a99-b4e0-0162fca75573.png"
+          },
+          {
+            "id": "c51cn7vmu",
+            "type": "Text",
+            "content": "send me a pic of your office"
+          }
+        ],
+        "rewardBlocks": [
+          {
+            "id": "yb0egbhwz",
+            "type": "Text",
+            "content": "I love your office"
+          }
+        ],
+        "quizQuestions": [
+          {
+            "id": "i8v2dyr",
+            "question": "",
+            "options": [
+              "",
+              ""
+            ],
+            "correctOptionIndex": 0
+          }
+        ],
+        "nodeTracks": [
+          {
+            "id": "zlgxbdt",
+            "name": "Track 1",
+            "coordinate": "40.64144, -8.65818"
+          }
+        ]
+      },
+      "measured": {
+        "width": 150,
+        "height": 84
+      },
+      "selected": false
+    },
+    {
+      "id": "conclusion",
+      "type": "quest",
+      "position": {
+        "x": 250.5,
+        "y": 310
+      },
+      "data": {
+        "role": "conclusion",
+        "label": "Conclusion",
+        "descriptionBlocks": [
+          {
+            "id": "0geth1k",
+            "type": "Text",
+            "content": "Offices are aaaaawwwsssooomeee"
+          },
+          {
+            "id": "6uh6kg2up",
+            "type": "Image",
+            "content": "http://localhost:9110/scavenger/2f80a142-4954-4cd0-96fd-688c606be195.jpg"
+          }
+        ],
+        "points": 100,
+        "rewardBlocks": [],
+        "challengeMode": "None",
+        "challengeCode": "",
+        "confirmationMode": "Quiz",
+        "quizQuestions": [
+          {
+            "id": "1",
+            "question": "",
+            "options": [
+              "",
+              ""
+            ],
+            "correctOptionIndex": 0
+          }
+        ],
+        "nodeTracks": [
+          {
+            "id": "1",
+            "name": "Track 1",
+            "coordinate": ""
+          }
+        ]
+      },
+      "measured": {
+        "width": 150,
+        "height": 84
+      },
+      "selected": true,
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-intro-b281308b-1c11-4f88-b32d-afc4a6d11444",
+      "source": "intro",
+      "target": "b281308b-1c11-4f88-b32d-afc4a6d11444",
+      "animated": true
+    },
+    {
+      "id": "e-b281308b-1c11-4f88-b32d-afc4a6d11444-conclusion",
+      "source": "b281308b-1c11-4f88-b32d-afc4a6d11444",
+      "target": "conclusion",
+      "animated": true
+    }
+  ]
+}

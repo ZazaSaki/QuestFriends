@@ -1,0 +1,191 @@
+<!DOCTYPE html><html lang="pt-BR" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>EJAS26 - A Jornada Começa</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#b6ccbe",
+                      "on-secondary": "#ffffff",
+                      "outline": "#737874",
+                      "secondary-fixed": "#ffdbc9",
+                      "on-surface": "#1a1c1c",
+                      "secondary-container": "#fc934f",
+                      "on-primary-container": "#90a598",
+                      "primary": "#13251c",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed": "#0c1f16",
+                      "inverse-on-surface": "#f0f1f1",
+                      "tertiary-fixed-dim": "#c9c6c0",
+                      "surface-container-high": "#e8e8e8",
+                      "outline-variant": "#c2c8c2",
+                      "on-tertiary-fixed": "#1c1c18",
+                      "surface-bright": "#f9f9f9",
+                      "tertiary": "#22221e",
+                      "on-error": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "inverse-surface": "#2f3131",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed": "#d2e8d9",
+                      "on-surface-variant": "#424844",
+                      "background": "#f9f9f9",
+                      "surface-variant": "#e2e2e2",
+                      "secondary": "#994703",
+                      "surface-container-low": "#f3f3f4",
+                      "on-background": "#1a1c1c",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#e2e2e2",
+                      "on-tertiary-container": "#a2a09b",
+                      "surface-tint": "#4f6358",
+                      "tertiary-container": "#383733",
+                      "surface-dim": "#dadada",
+                      "inverse-primary": "#b6ccbe",
+                      "on-tertiary-fixed-variant": "#484743",
+                      "surface-container": "#eeeeee",
+                      "on-secondary-container": "#6d3000",
+                      "on-primary-fixed-variant": "#384b40",
+                      "tertiary-fixed": "#e6e2dc",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#753400",
+                      "primary-container": "#283b31",
+                      "secondary-fixed-dim": "#ffb68c",
+                      "surface": "#fcf8f2", /* Adjusted to Cream per style guide, though config says f9f9f9 */
+                      "on-secondary-fixed": "#321200",
+                      "on-error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "unit": "8px",
+                      "container-margin": "24px",
+                      "stack-sm": "8px",
+                      "section-padding": "48px"
+              },
+              "fontFamily": {
+                      "label-md": ["Inter"],
+                      "headline-xl": ["Playfair Display"],
+                      "headline-lg": ["Playfair Display"],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["Playfair Display"],
+                      "label-sm": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Playfair Display"]
+              },
+              "fontSize": {
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-xl": ["40px", {"lineHeight": "48px", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "500"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf8f2; /* Cream background */
+            color: #13251c; /* Dark green text */
+        }
+    </style>
+</head>
+<body class="antialiased font-body-md text-body-md min-h-screen relative pb-32" style="background-color: #1a1a1a; color: #f9f9f9;">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center px-container-margin py-4 w-full shadow-md docked full-width top-0 sticky z-40 bg-primary">
+<button aria-label="Menu" class="text-on-surface-variant hover:opacity-80 transition-opacity scale-95 active:transition-transform">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-white italic">EJAS26</h1>
+<button aria-label="Account" class="text-on-surface-variant hover:opacity-80 transition-opacity scale-95 active:transition-transform">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="px-container-margin pt-stack-lg pb-section-padding max-w-2xl mx-auto">
+<!-- Hero Image -->
+
+<!-- Title -->
+<div class="mb-stack-lg text-center">
+<span class="inline-block px-3 py-1 bg-primary-container text-on-primary-container font-label-sm text-label-sm uppercase rounded-full mb-stack-sm tracking-widest">Missão 01</span>
+<h2 class="font-headline-xl text-headline-xl text-white mb-stack-sm">A Jornada Começa</h2>
+<div class="h-1 w-16 bg-secondary mx-auto rounded-full"></div>
+</div>
+<!-- Narrative Content -->
+<article class="bg-primary-container/10 p-6 rounded-xl shadow-md mb-stack-lg space-y-stack-md text-white/70 text-justify"><p class="font-body-lg text-body-lg leading-relaxed text-white">Cada grande aventura começa com um único passo, muitas vezes o mais difícil de dar. A jornada à sua frente não é apenas uma travessia física, mas um convite ao autodescobrimento e à conexão profunda com o ambiente ao seu redor.</p><p class="leading-relaxed">Neste primeiro capítulo, você é chamado a explorar o Caminho das Sombras Antigas. Historicamente, este trilho era percorrido por buscadores de sabedoria em momentos de transição. O ar denso e o silêncio respeitoso da floresta servem como um espelho para a mente, refletindo aquilo que muitas vezes ignoramos no ruído cotidiano.</p><p class="leading-relaxed">Seu objetivo inicial é simples: encontrar o Marco de Pedra do Início. Não se apresse. O verdadeiro propósito desta missão é observar como seus próprios passos ecoam no silêncio e preparar seu espírito para os desafios que inevitavelmente surgirão.</p></article><!-- Media Example Section -->
+<section class="space-y-stack-lg mb-stack-lg">
+<!-- Audio Player (Styled like SCREEN_9) -->
+<div class="bg-primary-container/10 rounded-2xl p-4 flex items-center justify-between shadow-md border border-white/5">
+<div class="flex items-center gap-3">
+<button aria-label="Play audio log" class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-md hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div>
+<p class="font-label-md text-label-md text-white">Diário do Peregrino</p>
+<p class="font-label-sm text-label-sm text-white/60">0:45 / 2:30</p>
+</div>
+</div>
+<!-- Audio Waveform Visualization -->
+<div class="flex items-center gap-1 h-6">
+<div class="w-1 bg-secondary rounded-full h-2 animate-pulse"></div>
+<div class="w-1 bg-secondary rounded-full h-4 animate-pulse" style="animation-delay: 0.2s"></div>
+<div class="w-1 bg-secondary rounded-full h-6 animate-pulse" style="animation-delay: 0.4s"></div>
+<div class="w-1 bg-secondary rounded-full h-3 animate-pulse" style="animation-delay: 0.6s"></div>
+<div class="w-1 bg-secondary rounded-full h-5 animate-pulse" style="animation-delay: 0.8s"></div>
+</div>
+</div>
+<!-- Secondary Image Placeholder -->
+<figure class="rounded-xl overflow-hidden shadow-lg border border-white/5">
+<div class="w-full h-48 bg-primary-container/20 flex items-center justify-center relative">
+<span class="material-symbols-outlined text-white/20 text-4xl">image</span>
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+<p class="text-label-sm font-label-sm text-white/80 uppercase tracking-widest">Referência Visual: O Marco de Pedra</p>
+</div>
+</div>
+</figure>
+</section>
+<!-- Difficulty/Time Chips -->
+<div class="flex gap-unit mb-stack-lg justify-center">
+<div class="px-4 py-2 bg-primary-container text-on-primary-container font-label-sm text-label-sm uppercase rounded-full flex items-center gap-2"><span class="material-symbols-outlined text-[16px]" data-icon="directions_walk">directions_walk</span>Fácil</div>
+</div>
+<!-- Action Button -->
+<div class="text-center mt-stack-lg">
+<button class="bg-[#d97736] text-on-secondary font-label-md text-label-md px-8 py-4 rounded-3xl shadow-lg hover:opacity-90 active:scale-95 transition-all w-full md:w-auto min-w-[200px]">
+                INICIAR DESAFIO
+            </button>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-6 left-0 right-0 mx-auto z-50 flex justify-around items-center px-6 py-3 max-w-md bg-primary/90 backdrop-blur-md rounded-full shadow-lg w-[calc(100%-48px)]">
+<!-- Explore (Active based on Intent: Starting a new challenge/exploring) -->
+<button aria-label="explore" class="flex items-center justify-center bg-secondary text-on-secondary rounded-full w-12 h-12 shadow-md hover:scale-110 transition-transform scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+</button>
+<!-- Explore Nearby (Inactive) -->
+<button aria-label="explore_nearby" class="flex items-center justify-center text-white/70 w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="explore_nearby">explore_nearby</span>
+</button>
+<!-- Leaderboard (Inactive) -->
+<button aria-label="leaderboard" class="flex items-center justify-center text-white/70 w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+</button>
+</nav>
+</body></html>

@@ -191,11 +191,10 @@ export async function startRoom(req, res, next) {
   }
 }
 
-
-
 /**
  * GET /api/rooms?status=OPEN&gameId=<id>
- * List rooms, optionally filtered by status and/or game.
+ * List rooms, optionally filtered by status and/or game (for the Manager
+ * dashboard).
  */
 export async function listRooms(req, res, next) {
   try {
@@ -211,6 +210,7 @@ export async function listRooms(req, res, next) {
       orderBy: { createdAt: "desc" },
       include: { _count: { select: { teams: true } } },
     });
+
     res.status(200).json(
       rooms.map((r) => ({
         id: r.id,
