@@ -4,6 +4,8 @@ import { roomChannel } from "../sockets/index.js";
 /** Upper bound on teams per room — a sanity guard, not a game-design limit. */
 const MAX_TEAMS = 100;
 
+const ROOM_STATUSES = ["OPEN", "PLAYING", "FINISHED"];
+
 /**
  * POST /api/rooms
  * Body: { gameId, staffPassword?, teamCount? }
@@ -246,14 +248,53 @@ export async function endRoom(req, res, next) {
 }
 
 /**
- * GET /api/rooms?gameId=<gameId>
- * List rooms, optionally filtered by game (for the Manager dashboard).
+ * POST /api/rooms/:roomId/end
+ * Closes the room for good: status → FINISHED and every connected client is
+ * told the host ended it. `reason: "ended"` matches what the player app
+ * already distinguishes from a janitor-driven close.
+ */
+export async function endRoom(req, res, next) {
+  try {
+    const { roomId } = req.params;
+
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    const updated = await prisma.room.update({
+      where: { id: roomId },
+      data: { status: "FINISHED" },
+    });
+
+    const io = req.app.get("io");
+    io.to(roomChannel(roomId)).emit("room_closed", {
+      roomId,
+      reason: "ended",
+      status: updated.status,
+      at: Date.now(),
+    });
+
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/rooms?status=OPEN&gameId=<id>
+ * List rooms, optionally filtered by status and/or game (for the Manager
+ * dashboard).
  */
 export async function listRooms(req, res, next) {
   try {
-    const { gameId } = req.query;
+    const { status, gameId } = req.query;
+    if (status && !ROOM_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of ${ROOM_STATUSES.join(", ")}` });
+    }
     const rooms = await prisma.room.findMany({
-      where: gameId ? { gameId } : undefined,
+      where: {
+        ...(status ? { status } : {}),
+        ...(gameId ? { gameId: String(gameId) } : {}),
+      },
       orderBy: { createdAt: "desc" },
       include: { _count: { select: { teams: true } } },
     });
@@ -267,6 +308,37 @@ export async function listRooms(req, res, next) {
         teamCount: r._count.teams,
       }))
     );
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/rooms/:roomId/end
+ * Force-ends a room ("kill"): sets status FINISHED and notifies everyone in the
+ * room via a `room_closed` socket event. The row is kept (soft end).
+ */
+export async function endRoom(req, res, next) {
+  try {
+    const { roomId } = req.params;
+
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    const updated = await prisma.room.update({
+      where: { id: roomId },
+      data: { status: "FINISHED" },
+    });
+
+    const io = req.app.get("io");
+    io.to(roomChannel(roomId)).emit("room_closed", {
+      roomId,
+      reason: "ended",
+      status: "FINISHED",
+      at: Date.now(),
+    });
+
+    res.status(200).json(updated);
   } catch (err) {
     next(err);
   }
