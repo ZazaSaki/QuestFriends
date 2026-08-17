@@ -230,6 +230,12 @@ const nodeTypes = {
   quest: QuestNode,
 };
 
+const rid = () => Math.random().toString(36).substr(2, 9);
+
+// Vertical spacing between chained nodes — matches the layout `gameToGraph`
+// produces when loading a saved game, so added nodes line up with loaded ones.
+const NODE_GAP_Y = 130;
+
 // Default game: Introduction → Quest 1 → Conclusion (exactly one quest).
 const makeDefaultNodes = (): Node[] => [
   { id: 'intro', type: 'quest', position: { x: 250, y: 50 }, data: { role: 'intro', label: 'Introduction', descriptionBlocks: [{ id: 'b1', type: 'Text', content: '' }] } },
@@ -982,6 +988,83 @@ export default function QuestBuilder() {
     setSelectedNodeId(null);
   }, [selectedNodeId]);
 
+  /**
+   * Insert a new quest after the selected one (or at the end of the chain when
+   * the selection is Intro/Conclusion/nothing).
+   *
+   * `graphToPayload` orders quests by node.position.y — NOT by edges — so the
+   * y coordinate is what actually decides the play order. Hence the shift of
+   * everything below the insertion point; the edges are rewired purely so the
+   * canvas keeps reading as one unbroken chain.
+   */
+  const addQuestNode = useCallback(() => {
+    const roleOf = (n: Node) => (n.data as any).role as string | undefined;
+
+    const selected = nodes.find((n) => n.id === selectedNodeId);
+    const questNodes = nodes.filter((n) => roleOf(n) === 'quest');
+    const anchor =
+      selected && roleOf(selected) === 'quest'
+        ? selected
+        : [...questNodes].sort((a, b) => b.position.y - a.position.y)[0]
+          ?? nodes.find((n) => roleOf(n) === 'intro')
+          ?? nodes[0];
+    if (!anchor) return;
+
+    const newId = `q-${rid()}`;
+    const newY = anchor.position.y + NODE_GAP_Y;
+
+    // One past the highest "Quest <n>" in use, so deleting a middle quest
+    // never leads to two nodes with the same name.
+    const highest = nodes.reduce((max, n) => {
+      const m = /^Quest (\d+)$/.exec(String((n.data as any).label ?? ''));
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+
+    const newNode: Node = {
+      id: newId,
+      type: 'quest',
+      position: { x: anchor.position.x, y: newY },
+      selected: true,
+      // Mirrors NodeEditor's own field defaults so the node is complete before
+      // it is ever opened, and seeds one location slot per track so the
+      // missing-locations check on Save covers it.
+      data: {
+        role: 'quest',
+        label: `Quest ${Math.max(highest + 1, questNodes.length + 1)}`,
+        points: 100,
+        descriptionBlocks: [{ id: rid(), type: 'Text', content: '' }],
+        rewardBlocks: [],
+        challengeMode: 'None',
+        challengeCode: '',
+        confirmationMode: 'Quiz',
+        quizQuestions: [{ id: rid(), question: '', options: ['', ''], correctOptionIndex: 0 }],
+        nodeTracks: Array.from({ length: Math.max(1, totalTracks) }, (_, i) => ({
+          id: rid(),
+          name: `Track ${i + 1}`,
+          coordinate: '',
+        })),
+      },
+    };
+
+    setNodes((nds) => [
+      ...nds.map((n) =>
+        n.position.y >= newY
+          ? { ...n, selected: false, position: { ...n.position, y: n.position.y + NODE_GAP_Y } }
+          : { ...n, selected: false }
+      ),
+      newNode,
+    ]);
+
+    // Splice into the chain: whatever the anchor pointed at now hangs off the
+    // new node instead.
+    setEdges((eds) => [
+      ...eds.map((e) => (e.source === anchor.id ? { ...e, id: `e-${newId}-${e.target}`, source: newId } : e)),
+      { id: `e-${anchor.id}-${newId}`, source: anchor.id, target: newId, animated: true },
+    ]);
+
+    setSelectedNodeId(newId);
+  }, [nodes, selectedNodeId, totalTracks]);
+
   return (
     <div ref={containerRef} className="flex h-full w-full">
       {/* Left Sidebar: Quest Settings */}
@@ -1078,6 +1161,9 @@ export default function QuestBuilder() {
               {status.msg}
             </span>
           )}
+          <button onClick={addQuestNode} className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-md shadow-sm hover:bg-neutral-50 hover:text-indigo-600 transition-colors" title="Add quest (inserts after the selected quest)">
+            <Plus className="w-4 h-4" />
+          </button>
           <button onClick={handleSave} disabled={saving} className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-md shadow-sm hover:bg-neutral-50 hover:text-emerald-600 transition-colors disabled:opacity-50" title="Save (creates a new game)">
             <Save className="w-4 h-4" />
           </button>

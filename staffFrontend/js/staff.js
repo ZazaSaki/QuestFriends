@@ -95,11 +95,12 @@ function connectRealtime() {
     socket.emit("join_room", { roomId: session.roomId, isStaff: true });
   });
   socket.on("disconnect", () => setConn(false));
-  socket.on("submission_pending", (s) => {
-    addSubmissionToThread(s);
+  socket.on("submission_pending", (raw) => {
+    const s = normalizeSubmission(raw);
+    if (!addSubmissionToThread(raw)) return;
     renderQuestList();
     if (openQuestId === s.questId) renderQuestDetail(s.id);
-    toast("Nova submissão: " + (s.teamName || s.teamId) + (s.questTitle ? " — " + s.questTitle : ""), "amber");
+    toast("Nova submissão: " + s.teamName + " — " + s.questTitle, "amber");
   });
   socket.on("player_location", (p) => {
     liveLocations.set(p.userId, p);
@@ -125,12 +126,46 @@ async function refreshPending() {
 }
 $("refreshQuestsBtn").addEventListener("click", () => { refreshPending(); refreshTeams(); });
 
-function addSubmissionToThread(s) {
+/**
+ * A submission reaches us in two different shapes and they disagree on field
+ * names, so everything downstream reads one canonical object:
+ *   • GET /api/staff/submissions — a Prisma row: `id`, plus nested `team` /
+ *     `quest` objects (no teamName / questTitle / challengeType at top level).
+ *   • the `submission_pending` socket push — flat `teamName` / `questTitle` /
+ *     `challengeType`, and historically `submissionId` instead of `id`.
+ * Reading `s.id` off the socket shape is what produced
+ * POST /api/staff/submissions/undefined/validate → 404.
+ */
+function normalizeSubmission(s) {
+  return {
+    id: s.id || s.submissionId || null,
+    teamId: s.teamId || s.team?.id || null,
+    teamName: s.teamName || s.team?.name || s.teamId || "equipa",
+    questId: s.questId || s.quest?.id || null,
+    questTitle: s.questTitle || s.quest?.title || s.questId || "quest",
+    challengeType: s.challengeType || s.quest?.challengeType || "—",
+    content: s.content ?? null,
+    status: s.status || "PENDING",
+    createdAt: s.createdAt || null,
+  };
+}
+
+function addSubmissionToThread(raw) {
+  const s = normalizeSubmission(raw);
+  // No id = nothing we could ever validate; keeping it would only render a
+  // button that 404s.
+  if (!s.id) {
+    console.warn("[staff] ignoring submission with no id:", raw);
+    return null;
+  }
   let thread = questThreads.get(s.questId);
   if (!thread) {
-    thread = { questId: s.questId, questTitle: s.questTitle || s.questId, items: new Map() };
+    thread = { questId: s.questId, questTitle: s.questTitle, items: new Map() };
     questThreads.set(s.questId, thread);
   }
+  // A live push can arrive for a quest whose thread was created from a refresh
+  // with only the raw id as its title — upgrade it once a real title shows up.
+  if (s.questTitle && thread.questTitle === thread.questId) thread.questTitle = s.questTitle;
   thread.items.set(s.id, s);
   return thread;
 }
@@ -245,8 +280,18 @@ function buildMessage(s, thread, highlight) {
 }
 
 async function resolveMessage(s, status, thread, msgEl) {
+  if (!s.id) return toast("Submissão sem referência — atualiza a lista.", "rust");
+
   const r = await api("POST", `/api/staff/submissions/${s.id}/validate`, { status, validatorId: session.userId });
   if (r.status === 409) return toast("Já foi validada por outro membro da staff.", "rust");
+  if (r.status === 404) {
+    // The row is gone — its room was erased (deleting a room cascades to teams
+    // and their submissions). Drop the stale card and resync with the backend.
+    thread.items.delete(s.id);
+    toast("Essa submissão já não existe (sala apagada).", "rust");
+    refreshPending();
+    return;
+  }
   if (!r.ok) return toast("Erro a validar: " + (r.body?.error || r.status), "rust");
 
   toast(status === "APPROVED" ? "Aprovado!" : "Recusado.", status === "APPROVED" ? "moss" : "rust");

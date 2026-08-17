@@ -360,7 +360,12 @@ export async function submit(req, res, next) {
     });
 
     // Push the new pending submission to staff live (dashboard feed).
+    // `id` mirrors the field name GET /api/staff/submissions returns, so the
+    // dashboard can treat a live push and a refreshed row identically — it is
+    // the id staff posts back to /validate. `submissionId` is kept as an alias
+    // for clients still running a cached older bundle.
     io.to(staffChannel(team.roomId)).emit("submission_pending", {
+      id: submission.id,
       submissionId: submission.id,
       teamId,
       teamName: team.name,
