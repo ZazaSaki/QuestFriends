@@ -20,7 +20,7 @@ services:
     ports:
       # Loopback-only: cloudflared runs on the host and the manager's nginx
       # reaches the backend in-network. Nothing here needs a LAN-facing bind.
-      - "127.0.0.1:9101:3000"
+      - "9101:3000"
     environment:
       # Postgres Variables
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@10.5.0.5:5432/${POSTGRES_DB}?schema=public
@@ -56,6 +56,8 @@ services:
     image: minio/minio:latest
     restart: always
     ports:
+      # MinIO API — the me-minio-questfriend.zakinet.com tunnel must point here
+      # (9110, not 9000: host port 9000 is already taken by another stack).
       - "127.0.0.1:9110:9000" # MinIO API Port (used by your Node app)
       - "127.0.0.1:9111:9001" # MinIO Web Console — loopback only, never tunnel it
     environment:
@@ -72,7 +74,7 @@ services:
     build: ./staffFrontend
     restart: always
     ports:
-      - "9112:3000"
+      - "9103:3000"
     environment:
       PORT: 3000
       # URL q\ue o BROWSER do utilizador vai usar para falar com o backend —
@@ -98,7 +100,7 @@ services:
         VITE_SOCKET_URL: ${PUBLIC_BACKEND_URL}
     restart: always
     ports:
-      - "9103:80" # Player UI (open http://localhost:9103 on the phone)
+      - "9104:80" # Player UI (open http://localhost:9104 on the phone)
     depends_on:
       - app
     networks:
@@ -119,8 +121,8 @@ services:
         VITE_PLAYER_URL: ${PLAYER_URL:-}
     restart: always
     ports:
-      # Loopback only — this is the single origin the Cloudflare tunnel points at.
-      - "127.0.0.1:9113:80" # Manager UI (open http://localhost:9113)
+      # Loopback only — cloudflared runs on the host.
+      - "9102:80" # Manager UI (open http://localhost:9102)
     depends_on:
       - app
     networks:

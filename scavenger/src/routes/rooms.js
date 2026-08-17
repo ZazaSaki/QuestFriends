@@ -6,6 +6,7 @@ import {
   joinStaff,
   startRoom,
   endRoom,
+  deleteRoom,
   listRooms,
 } from "../controllers/roomController.js";
 
@@ -17,6 +18,7 @@ router.post("/:roomId/join-player", joinPlayer);
 router.post("/:roomId/join-staff", joinStaff);
 router.post("/:roomId/start", startRoom);
 router.post("/:roomId/end", endRoom);
+router.delete("/:roomId", deleteRoom);
 router.get("/", listRooms);
 
 export default router;

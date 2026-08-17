@@ -248,32 +248,32 @@ export async function endRoom(req, res, next) {
 }
 
 /**
- * POST /api/rooms/:roomId/end
- * Closes the room for good: status → FINISHED and every connected client is
- * told the host ended it. `reason: "ended"` matches what the player app
- * already distinguishes from a janitor-driven close.
+ * DELETE /api/rooms/:roomId
+ * Erases the room and everything hanging off it (teams → members & submissions,
+ * via the schema's cascades — the same delete the janitor performs on empty
+ * rooms). Unlike `endRoom`, no row survives, so this is not undoable.
+ *
+ * Anyone still connected is told first — the socket room is unreachable once
+ * the row is gone. `reason: "deleted"` falls through the player's generic
+ * "room was closed" notice, which is the behaviour we want.
  */
-export async function endRoom(req, res, next) {
+export async function deleteRoom(req, res, next) {
   try {
     const { roomId } = req.params;
 
     const room = await prisma.room.findUnique({ where: { id: roomId } });
     if (!room) return res.status(404).json({ error: "Room not found" });
 
-    const updated = await prisma.room.update({
-      where: { id: roomId },
-      data: { status: "FINISHED" },
-    });
-
     const io = req.app.get("io");
     io.to(roomChannel(roomId)).emit("room_closed", {
       roomId,
-      reason: "ended",
-      status: updated.status,
+      reason: "deleted",
       at: Date.now(),
     });
 
-    res.status(200).json(updated);
+    await prisma.room.delete({ where: { id: roomId } }); // cascades teams
+
+    res.status(200).json({ id: roomId, deleted: true });
   } catch (err) {
     next(err);
   }
@@ -308,37 +308,6 @@ export async function listRooms(req, res, next) {
         teamCount: r._count.teams,
       }))
     );
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * POST /api/rooms/:roomId/end
- * Force-ends a room ("kill"): sets status FINISHED and notifies everyone in the
- * room via a `room_closed` socket event. The row is kept (soft end).
- */
-export async function endRoom(req, res, next) {
-  try {
-    const { roomId } = req.params;
-
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
-    if (!room) return res.status(404).json({ error: "Room not found" });
-
-    const updated = await prisma.room.update({
-      where: { id: roomId },
-      data: { status: "FINISHED" },
-    });
-
-    const io = req.app.get("io");
-    io.to(roomChannel(roomId)).emit("room_closed", {
-      roomId,
-      reason: "ended",
-      status: "FINISHED",
-      at: Date.now(),
-    });
-
-    res.status(200).json(updated);
   } catch (err) {
     next(err);
   }

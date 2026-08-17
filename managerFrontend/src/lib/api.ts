@@ -183,5 +183,9 @@ export const startRoom = (roomId: string) =>
 export const endRoom = (roomId: string) =>
   request<{ id: string; status: string }>('POST', `/api/rooms/${roomId}/end`);
 
+/** Erases the room, its teams, members and submissions. Not undoable. */
+export const deleteRoom = (roomId: string) =>
+  request<{ id: string; deleted: boolean }>('DELETE', `/api/rooms/${roomId}`);
+
 export const swapMember = (userId: string, fromTeamId: string, toTeamId: string) =>
   request('PUT', '/api/teams/swap-member', { userId, fromTeamId, toTeamId });

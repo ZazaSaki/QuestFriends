@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ChevronRight, Gamepad2, DoorOpen, RefreshCw, Edit3, Search } from 'lucide-react';
+import { Plus, ChevronRight, Gamepad2, DoorOpen, RefreshCw, Edit3, Search, Trash2 } from 'lucide-react';
 import { cn } from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
-import { listGames, listRooms, createRoom, type GameSummary, type RoomSummary } from '../lib/api';
+import { listGames, listRooms, createRoom, deleteRoom, type GameSummary, type RoomSummary } from '../lib/api';
 
 const STATUS_LABEL: Record<string, string> = { OPEN: 'open', PLAYING: 'active', FINISHED: 'completed' };
 
@@ -20,6 +20,12 @@ export default function Dashboard() {
   const [teamCount, setTeamCount] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Room pending deletion — holds the whole summary so the confirm dialog can
+  // show what is about to be lost (teams, status) without a second fetch.
+  const [roomToDelete, setRoomToDelete] = useState<RoomSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadGames = useCallback(async () => {
     setLoadingGames(true);
@@ -61,6 +67,23 @@ export default function Dashboard() {
       setCreateError((e as Error).message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteRoom(roomToDelete.id);
+      setRooms((cur) => cur.filter((r) => r.id !== roomToDelete.id));
+      setRoomToDelete(null);
+      // The game list carries a roomCount badge, so refresh it too.
+      loadGames();
+    } catch (e) {
+      setDeleteError((e as Error).message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -187,7 +210,7 @@ export default function Dashboard() {
               <div
                 key={room.id}
                 onClick={() => navigate(`/monitor/${room.id}`)}
-                className="p-4 bg-white rounded-lg border border-neutral-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+                className="p-4 bg-white rounded-lg border border-neutral-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group"
               >
                 <div>
                   <h3 className="font-medium text-neutral-900 font-mono">Room {room.id.slice(0, 8)}</h3>
@@ -197,14 +220,23 @@ export default function Dashboard() {
                     <span>{new Date(room.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
-                <span className={cn(
-                  'px-2.5 py-1 text-xs rounded-full font-medium capitalize',
-                  room.status === 'PLAYING' ? 'bg-emerald-100 text-emerald-700' :
-                  room.status === 'OPEN' ? 'bg-blue-100 text-blue-700' :
-                  'bg-neutral-100 text-neutral-700'
-                )}>
-                  {STATUS_LABEL[room.status] ?? room.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    'px-2.5 py-1 text-xs rounded-full font-medium capitalize',
+                    room.status === 'PLAYING' ? 'bg-emerald-100 text-emerald-700' :
+                    room.status === 'OPEN' ? 'bg-blue-100 text-blue-700' :
+                    'bg-neutral-100 text-neutral-700'
+                  )}>
+                    {STATUS_LABEL[room.status] ?? room.status}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteError(null); setRoomToDelete(room); }}
+                    className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Erase room"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -252,6 +284,42 @@ export default function Dashboard() {
               <button onClick={() => setIsCreateRoomModalOpen(false)} className="px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-100 transition-colors font-medium text-sm">Cancel</button>
               <button onClick={handleCreateRoom} disabled={creating} className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50">
                 {creating ? 'Creating…' : 'Create Room'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Erase Room confirmation */}
+      {roomToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+              <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-red-600" />
+                Erase Room
+              </h3>
+              <button onClick={() => setRoomToDelete(null)} className="text-neutral-500 hover:text-neutral-700 text-xl leading-none">&times;</button>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-neutral-700">
+                Permanently erase <b className="font-mono">Room {roomToDelete.id.slice(0, 8)}</b> with its{' '}
+                <b>{roomToDelete.teamCount}</b> team{roomToDelete.teamCount === 1 ? '' : 's'}, their members and
+                every submission. This cannot be undone.
+              </p>
+              {roomToDelete.status !== 'FINISHED' && (
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2">
+                  This room is {STATUS_LABEL[roomToDelete.status] ?? roomToDelete.status.toLowerCase()} — anyone
+                  still playing will be kicked out. To stop a game without losing its results, open the room and
+                  use <b>End Room</b> instead.
+                </p>
+              )}
+              {deleteError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{deleteError}</div>}
+            </div>
+            <div className="p-4 border-t border-neutral-200 flex justify-end gap-3 bg-neutral-50">
+              <button onClick={() => setRoomToDelete(null)} className="px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-100 transition-colors font-medium text-sm">Cancel</button>
+              <button onClick={handleDeleteRoom} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium text-sm disabled:opacity-50">
+                {deleting ? 'Erasing…' : 'Erase Room'}
               </button>
             </div>
           </div>
