@@ -247,6 +247,40 @@ export async function endRoom(req, res, next) {
   }
 }
 
+
+/**
+ * DELETE /api/rooms/:roomId
+ * Erases the room and everything hanging off it (teams → members & submissions,
+ * via the schema's cascades — the same delete the janitor performs on empty
+ * rooms). Unlike `endRoom`, no row survives, so this is not undoable.
+ *
+ * Anyone still connected is told first — the socket room is unreachable once
+ * the row is gone. `reason: "deleted"` falls through the player's generic
+ * "room was closed" notice, which is the behaviour we want.
+ */
+export async function deleteRoom(req, res, next) {
+  try {
+    const { roomId } = req.params;
+
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    const io = req.app.get("io");
+    io.to(roomChannel(roomId)).emit("room_closed", {
+      roomId,
+      reason: "deleted",
+      at: Date.now(),
+    });
+
+    await prisma.room.delete({ where: { id: roomId } }); // cascades teams
+
+    res.status(200).json({ id: roomId, deleted: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 /**
  * GET /api/rooms?status=OPEN&gameId=<id>
  * List rooms, optionally filtered by status and/or game (for the Manager
